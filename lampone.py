@@ -23,7 +23,6 @@ class Lampone(Bot):
         print(message['text'])
         reply = self.m.get_reply(message['text'])
         self.sendMessage(chat_id,reply)
-        self.m.sync()
     
 
 if __name__ == '__main__':
