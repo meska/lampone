@@ -99,6 +99,10 @@ class Bot:
     def parsemessage(self,chat_id,message):
         # parse message here
         pass
+
+    def parsedocument(self,chat_id,message):
+        # parse message here
+        pass    
     
     def getUpdates(self):
         timeout = 60
@@ -116,4 +120,6 @@ class Bot:
                 cid = m['chat']['id']
                 if 'text' in m:
                     self.parsemessage(cid,m)
+                if 'document' in m:
+                    self.parsedocument(cid,m)                    
                 self.offset = r['update_id'] + 1
