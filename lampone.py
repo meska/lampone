@@ -29,10 +29,7 @@ class Lampone(Bot):
 if __name__ == '__main__':
     token = os.getenv('TELEGRAM_TOKEN')
     if not token:
-        print("Token non definito")    
-    while True:
-        try:
-            l = Lampone(token)
-            l.getUpdates()
-        except:
-            print("Restarting..")
+        print("Token non definito, impostare TELEGRAM_TOKEN ")    
+    else:
+        l = Lampone(token)
+        l.getUpdates()
