@@ -83,6 +83,12 @@ class Lampone(Bot):
             self.learn(message)
             return
         
+        if message['text'].startswith('/f') and message['from']['id'] in self.admins:
+            txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
+            reply = self.megahal.get_reply(txt)
+            self.sendMessage(chat_id,reply)
+            return        
+        
         if message['text'] == "/start":
             self.sendMessage(chat_id,"Welcome to Lampone Bot")
             return
