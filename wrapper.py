@@ -20,11 +20,13 @@ class Bot:
         self.token = token
   
     def setWebhook(self):
-        from django.core.urlresolvers import reverse
-        whurl = "%s%s" % (os.getenv('TELEGRAM_WEBHOOK_URL'),reverse('telegrambot.views.webhook'))
+        whurl = "%s" % (os.getenv('TELEGRAM_WEBHOOK_URL'))
         r = self.post('setWebhook',{'url':whurl.replace('http:','https:')})
         print("Telegram WebHook Setup: %s" % r)
             
+    def clearWebHook(self):
+        r = self.post('setWebhook',{'url':''})
+        print("Telegram WebHook Cleared: %s" % r)            
   
     def get(self,method,params=None):
         
@@ -101,7 +103,7 @@ class Bot:
         pass
 
     def parsedocument(self,chat_id,message):
-        # parse message here
+        # parse document here but no api from telegram yet
         pass    
     
     def getUpdates(self):

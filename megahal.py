@@ -104,9 +104,13 @@ class Brain(object):
         self.error_symbol = self.dictionary.add_word(ERROR_WORD)
         self.end_symbol = self.dictionary.add_word(END_WORD)
        
-        self.banwords = self.db.setdefault('banwords', Dictionary(words_it.DEFAULT_BANWORDS))
-        self.auxwords = self.db.setdefault('auxwords', Dictionary(words_it.DEFAULT_AUXWORDS))
-        self.swapwords = self.db.setdefault('swapwords', words_it.DEFAULT_SWAPWORDS)
+        # load english and italian words
+        swapwords = words_en.DEFAULT_SWAPWORDS.copy()
+        swapwords.update(words_it.DEFAULT_SWAPWORDS)
+        
+        self.banwords = self.db.setdefault('banwords', Dictionary(words_it.DEFAULT_BANWORDS + words_en.DEFAULT_BANWORDS))
+        self.auxwords = self.db.setdefault('auxwords', Dictionary(words_it.DEFAULT_AUXWORDS + words_en.DEFAULT_AUXWORDS))
+        self.swapwords = self.db.setdefault('swapwords',swapwords)
         self.closed = False
 
     @property
