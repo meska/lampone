@@ -84,9 +84,12 @@ class Lampone(Bot):
             return
         
         if message['text'].startswith('/f') and message['from']['id'] in self.admins:
-            txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
-            reply = self.megahal.get_reply(txt)
-            self.sendMessage(chat_id,reply)
+            ## fortune auto learning, needs fortune-mod installed
+            for x in range(100):
+                txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
+                self.sendMessage(chat_id,"Learning from\n%s" % txt)
+                reply = self.megahal.get_reply(txt)
+                self.sendMessage(chat_id,reply)
             return        
         
         if message['text'] == "/start":
