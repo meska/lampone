@@ -96,17 +96,22 @@ class Lampone(Bot):
                 param = message['text'].split()[1]
                 if param.isdecimal():
                     count = int(param)
+            self.sendMessage(chat_id,"Learning %s fortunes"%count)
             for x in range(count):
                 txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
                 if txt:
-                    self.sendMessage(chat_id,"Learning from\n%s" % txt)
-                    reply = self.megahal.get_reply(txt)
-                    self.sendMessage(chat_id,reply)
+                    self.megahal.learn(txt)
+            self.sendMessage(chat_id,"Done")
             return        
         
         if message['text'] == "/start":
             self.sendMessage(chat_id,"Welcome to Lampone Bot")
             return
+        
+        if message['text'] == "/s" and message['from']['id'] in self.admins:
+            self.megahal.sync()
+            self.sendMessage(chat_id,"Sync db")
+            return        
         
         if not message['text'].startswith('/'):
             reply = self.megahal.get_reply(message['text'])
