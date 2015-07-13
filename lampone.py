@@ -64,6 +64,11 @@ class Lampone(Bot):
         # backup brain file in case of crash
         print("Brain Backup! %s" % datetime.now().hour)
         self.megahal.sync()
+
+        # check for brainfile ext
+        if not os.path.exists(self.brainfile_name_real):
+            self.brainfile_name_real = self.brainfile_name
+            
         if os.path.exists("%s.%s" % (self.brainfile_name_real,datetime.now().hour)):
             os.unlink("%s.%s" % (self.brainfile_name_real,datetime.now().hour))
         copy2(self.brainfile_name_real, "%s.%s" % (self.brainfile_name_real,datetime.now().hour))
@@ -85,11 +90,18 @@ class Lampone(Bot):
         
         if message['text'].startswith('/f') and message['from']['id'] in self.admins:
             ## fortune auto learning, needs fortune-mod installed
-            for x in range(100):
+            ## check for param
+            count = 1
+            if len(message['text'].split()) > 1:
+                param = message['text'].split()[1]
+                if param.isdecimal():
+                    count = int(param)
+            for x in range(count):
                 txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
-                self.sendMessage(chat_id,"Learning from\n%s" % txt)
-                reply = self.megahal.get_reply(txt)
-                self.sendMessage(chat_id,reply)
+                if txt:
+                    self.sendMessage(chat_id,"Learning from\n%s" % txt)
+                    reply = self.megahal.get_reply(txt)
+                    self.sendMessage(chat_id,reply)
             return        
         
         if message['text'] == "/start":
