@@ -22,7 +22,9 @@ class Lampone(Bot):
         self.admins = [ int(x) for x in admins.split(",") ]
         # init megaHal    
         self.lastbackup = None
-        self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain.db")
+        self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
+        # TODO in some os shelve appends .db to filename
+        self.brainfile_name_real = os.path.join(os.path.split(__file__)[0],"lampone.brain.db")
         try:
             self.megahal = MegaHAL(brainfile=self.brainfile_name)
         except Exception as e:
@@ -31,18 +33,18 @@ class Lampone(Bot):
             hour_current = datetime.now().hour
             hour_last_try = (datetime.now() + timedelta(hours=1)).hour
             while True:
-                if os.path.exists("%s.%s" % (self.brainfile_name,hour_current)):
+                if os.path.exists("%s.%s" % (self.brainfile_name_real,hour_current)):
                     # unlink broken brainfile
-                    os.unlink(self.brainfile_name)
+                    os.unlink(self.brainfile_name_real)
                     # move backup file
-                    copy2("%s.%s" % (self.brainfile_name,hour_current),self.brainfile_name)
-                    os.unlink("%s.%s" % (self.brainfile_name,hour_current))
+                    copy2("%s.%s" % (self.brainfile_name_real,hour_current),self.brainfile_name_real)
+                    os.unlink("%s.%s" % (self.brainfile_name_real,hour_current))
                     self.__init__(token)
                     break
                 
                 if hour_current == hour_last_try:
                     print("No backups found, reinit from scratch")
-                    os.unlink(self.brainfile_name)
+                    os.unlink(self.brainfile_name_real)
                     self.__init__(token)
                     break
                 hour_current-=1
@@ -61,9 +63,9 @@ class Lampone(Bot):
         # backup brain file in case of crash
         print("Brain Backup! %s" % datetime.now().hour)
         self.megahal.sync()
-        if os.path.exists("%s.%s" % (self.brainfile_name,datetime.now().hour)):
-            os.unlink("%s.%s" % (self.brainfile_name,datetime.now().hour))
-        copy2(self.brainfile_name, "%s.%s" % (self.brainfile_name,datetime.now().hour))
+        if os.path.exists("%s.%s" % (self.brainfile_name_real,datetime.now().hour)):
+            os.unlink("%s.%s" % (self.brainfile_name_real,datetime.now().hour))
+        copy2(self.brainfile_name_real, "%s.%s" % (self.brainfile_name_real,datetime.now().hour))
         
     def parsedocument(self,chat_id,message):
         print("Documento ricevuto da %s" % message['from'] )
