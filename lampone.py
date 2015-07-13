@@ -96,6 +96,8 @@ class Lampone(Bot):
                 param = message['text'].split()[1]
                 if param.isdecimal():
                     count = int(param)
+                    if count > 100:
+                        count = 100
             self.sendMessage(chat_id,"Learning %s fortunes"%count)
             for x in range(count):
                 txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
