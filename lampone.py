@@ -55,6 +55,7 @@ class Lampone(Bot):
     def learn(self,message):
         lines = message['text'].splitlines()[1:]
         for l in lines:
+            print("learning: %s" % l)
             self.megahal.learn(l)
         self.megahal.sync()
 
