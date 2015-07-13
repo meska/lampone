@@ -110,18 +110,22 @@ class Bot:
         timeout = 60
         geturl =  "%s/bot%s/getUpdates" % (self.api_url,self.token)
         while True:
-            dt = dict(offset=self.offset, timeout=timeout)
             try:
-                j = requests.post(geturl, data=dt, timeout=None).json()
-            except ValueError:  # incomplete data
-                continue
-            if not j['ok'] or not j['result']:
-                continue
-            for r in j['result']:
-                m = r['message']
-                cid = m['chat']['id']
-                if 'text' in m:
-                    self.parsemessage(cid,m)
-                if 'document' in m:
-                    self.parsedocument(cid,m)                    
-                self.offset = r['update_id'] + 1
+                dt = dict(offset=self.offset, timeout=timeout)
+                try:
+                    j = requests.post(geturl, data=dt, timeout=None).json()
+                except ValueError:  # incomplete data
+                    continue
+                if not j['ok'] or not j['result']:
+                    continue
+                for r in j['result']:
+                    m = r['message']
+                    cid = m['chat']['id']
+                    if 'text' in m:
+                        self.parsemessage(cid,m)
+                    if 'document' in m:
+                        self.parsedocument(cid,m)                    
+                    self.offset = r['update_id'] + 1
+            except:
+                from time import sleep
+                sleep(60)
