@@ -22,7 +22,7 @@ class Lampone(Bot):
         self.admins = [ int(x) for x in admins.split(",") ]
         # init megaHal    
         self.lastbackup = None
-        self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
+        self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain.db")
         try:
             self.megahal = MegaHAL(brainfile=self.brainfile_name)
         except Exception as e:
