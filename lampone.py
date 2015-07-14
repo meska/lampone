@@ -23,6 +23,13 @@ class Lampone(Bot):
         self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
         # TODO in some os shelve appends .db to filename
         self.brainfile_name_real = os.path.join(os.path.split(__file__)[0],"lampone.brain.db")
+
+        if os.path.exists(self.brainfile_name) or os.path.exists(self.brainfile_name_real):
+            # need learning
+            self.need_learn = False
+        else:
+            self.need_learn = True
+            
         try:
             self.megahal = MegaHAL(brainfile=self.brainfile_name)
         except Exception as e:
@@ -59,6 +66,19 @@ class Lampone(Bot):
             self.log_learn(l)
         self.megahal.sync()
 
+    def autolearn(self):
+        # learns from previous chats
+        if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt")):
+            with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"rb") as learnfile:
+                for r in learnfile.readlines():
+                    l = r.decode('utf8').strip()
+                    try:
+                        print("learning: %s" % l)
+                        self.megahal.learn(l)
+                    except:
+                        pass
+            self.megahal.sync()
+
 
     def backupBrain(self):
         # backup brain file in case of crash
@@ -78,6 +98,8 @@ class Lampone(Bot):
     def parsemessage(self,chat_id,message):
         print("Messaggio ricevuto da %s" % message['from'] )
         print(message['text'])
+        
+
         
         if self.lastbackup != datetime.now().hour:
             self.lastbackup = datetime.now().hour
@@ -165,6 +187,8 @@ if __name__ == '__main__':
         l = Lampone(cf['telegram']['token'],admins=cf['telegram']['admins'])
         #l.clearWebHook()
         print(l.get('getMe'))
+        if l.need_learn:
+            l.autolearn()        
         for admin in l.admins:
             # notify admins when online
             l.action_typing(admin)
