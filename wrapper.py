@@ -112,9 +112,12 @@ class Bot:
         geturl =  "%s/bot%s/getUpdates" % (self.api_url,self.token)
         while True:
             if self.stop:
-                # ask for the next message before exit ( if not it will loop )
-                dt = dict(offset=self.offset, timeout=timeout)
-                j = requests.post(geturl, data=dt, timeout=None).json()
+                try:
+                    # ask for the next message before exit ( if not it will loop )
+                    dt = dict(offset=self.offset, timeout=timeout)
+                    j = requests.post(geturl, data=dt, timeout=None).json()
+                except:
+                    pass
                 break                 
             try:
                 dt = dict(offset=self.offset, timeout=timeout)
