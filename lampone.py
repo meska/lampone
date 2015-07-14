@@ -37,7 +37,7 @@ class Lampone(Bot):
             except:
                 pass
             
-    def log(msg):
+    def log(self,msg):
         try:
             with open(os.path.join(os.path.split(__file__)[0],"lampone.log"),"a") as logfile:
                 logfile.write("%s\n" % msg)
