@@ -110,6 +110,14 @@ class Lampone(Bot):
             self.sendMessage(chat_id,"Welcome to Lampone Bot")
             return
         
+        if message['text'] == "/help":
+            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond")
+            return        
+        
+        if message['text'] == "/stop":
+            self.sendMessage(chat_id,"Command not needed, just close the chat :)")
+            return        
+        
         if message['text'] == "/s" and message['from']['id'] in self.admins:
             self.megahal.sync()
             self.sendMessage(chat_id,"Sync db")
