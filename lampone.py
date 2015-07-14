@@ -12,7 +12,16 @@ from threading import Timer
 from shutil import copy2
 from datetime import datetime,timedelta
 from configparser import ConfigParser
+import logging
 
+
+logger = logging.getLogger('lampone')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('lampone.log')
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 
 class Lampone(Bot):
@@ -137,7 +146,9 @@ class Lampone(Bot):
             return        
         
         if not message['text'].startswith('/'):
+            logger.info('MSG FROM:%s --- %s' % (message['from'],message['text']))
             reply = self.megahal.get_reply(message['text'])
+            logger.info('MSG TO:%s --- %s' % (message['from'],reply))
             self.sendMessage(chat_id,reply)
     
 
