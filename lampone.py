@@ -44,7 +44,7 @@ class Lampone(Bot):
         except Exception as e:
             print(e)
 
-    def log_learn(msg):
+    def log_learn(self,msg):
         try:
             with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"a") as logfile:
                 logfile.write("%s\n" % msg)
@@ -138,6 +138,7 @@ class Lampone(Bot):
         if not message['text'].startswith('/'):
             self.log_learn(message['text'])
             self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
+            self.action_typing(chat_id)
             reply = self.megahal.get_reply(message['text'])
             self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
             self.sendMessage(chat_id,reply)
@@ -166,5 +167,6 @@ if __name__ == '__main__':
         print(l.get('getMe'))
         for admin in l.admins:
             # notify admins when online
+            l.action_typing(admin)
             l.sendMessage(admin,"Lampone is Online!")
         l.getUpdates()
