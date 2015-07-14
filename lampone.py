@@ -12,17 +12,6 @@ from threading import Timer
 from shutil import copy2
 from datetime import datetime,timedelta
 from configparser import ConfigParser
-import logging
-
-
-logger = logging.getLogger('lampone')
-logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler('lampone.log')
-fh.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-logger.addHandler(fh)
-
 
 class Lampone(Bot):
     
@@ -38,28 +27,19 @@ class Lampone(Bot):
             self.megahal = MegaHAL(brainfile=self.brainfile_name)
         except Exception as e:
             print("Database Error: %s"% e)
-            # fallback to backup
-            hour_current = datetime.now().hour
-            hour_last_try = (datetime.now() + timedelta(hours=1)).hour
-            while True:
-                if os.path.exists("%s.%s" % (self.brainfile_name_real,hour_current)):
-                    # unlink broken brainfile
-                    os.unlink(self.brainfile_name_real)
-                    # move backup file
-                    copy2("%s.%s" % (self.brainfile_name_real,hour_current),self.brainfile_name_real)
-                    os.unlink("%s.%s" % (self.brainfile_name_real,hour_current))
-                    self.__init__(token)
-                    break
-                
-                if hour_current == hour_last_try:
-                    print("No backups found, reinit from scratch")
-                    os.unlink(self.brainfile_name_real)
-                    self.__init__(token)
-                    break
-                hour_current-=1
-                if hour_current < 0:
-                    hour_current = 23
-
+            # starts with new db
+            try:
+                os.unlink(self.brainfile_name)
+            except:
+                pass
+            try:
+                os.unlink(self.brainfile_name_real)
+            except:
+                pass
+            
+    def log(msg):
+        with open(os.path.join(os.path.split(__file__)[0],"lampone.log"),"a") as logfile:
+            logfile.write("%s\n" % msg)
 
     def learn(self,message):
         lines = message['text'].splitlines()[1:]
@@ -73,7 +53,6 @@ class Lampone(Bot):
         # backup brain file in case of crash
         print("Brain Backup! %s" % datetime.now().hour)
         self.megahal.sync()
-
         # check for brainfile ext
         if not os.path.exists(self.brainfile_name_real):
             self.brainfile_name_real = self.brainfile_name
@@ -146,9 +125,9 @@ class Lampone(Bot):
             return        
         
         if not message['text'].startswith('/'):
-            logger.info('MSG FROM:%s --- %s' % (message['from'],message['text']))
+            self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
             reply = self.megahal.get_reply(message['text'])
-            logger.info('MSG TO:%s --- %s' % (message['from'],reply))
+            self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
             self.sendMessage(chat_id,reply)
     
 
