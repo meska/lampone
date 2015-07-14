@@ -85,6 +85,8 @@ class Lampone(Bot):
         # backup brain file in case of crash
         print("Brain Backup! %s" % datetime.now().hour)
         self.megahal.sync()
+        self.megahal._MegaHAL__brain.db.close()
+
         # check for brainfile ext
         if not os.path.exists(self.brainfile_name_real):
             self.brainfile_name_real = self.brainfile_name
@@ -92,6 +94,8 @@ class Lampone(Bot):
         if os.path.exists("%s.%s" % (self.brainfile_name_real,datetime.now().hour)):
             os.unlink("%s.%s" % (self.brainfile_name_real,datetime.now().hour))
         copy2(self.brainfile_name_real, "%s.%s" % (self.brainfile_name_real,datetime.now().hour))
+        
+        self.megahal = MegaHAL(brainfile=self.brainfile_name)
         
     def parsedocument(self,chat_id,message):
         print("Documento ricevuto da %s" % message['from'] )
@@ -101,9 +105,9 @@ class Lampone(Bot):
         print(message['text'])
         
 
-        #if self.lastbackup != datetime.now().hour:
-        #    self.lastbackup = datetime.now().hour
-        #    self.backupBrain()
+        if self.lastbackup != datetime.now().hour:
+            self.lastbackup = datetime.now().hour
+            self.backupBrain()
 
         if message['text'].startswith('/learn') and message['from']['id'] in self.admins:
             self.learn(message)
