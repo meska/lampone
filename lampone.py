@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #coding:utf-8
 """
-  Author: Marco Mescalchin  --<>
-  Purpose: Lampone telgram bot, chat to @LamponeBot
+  Author: Meska
+  Purpose: Lampone telegram bot, chat to @LamponeBot
   Created: 07/12/15
 """
 import os,sys
@@ -20,6 +20,7 @@ class Lampone(Bot):
         self.admins = [ int(x) for x in admins.split(",") ]
         # init megaHal    
         self.lastbackup = None
+        self.listening = []
         self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
         # TODO in some os shelve appends .db to filename
         self.brainfile_name_real = os.path.join(os.path.split(__file__)[0],"lampone.brain.db")
@@ -100,10 +101,9 @@ class Lampone(Bot):
         print(message['text'])
         
 
-        
-        if self.lastbackup != datetime.now().hour:
-            self.lastbackup = datetime.now().hour
-            self.backupBrain()
+        #if self.lastbackup != datetime.now().hour:
+        #    self.lastbackup = datetime.now().hour
+        #    self.backupBrain()
 
         if message['text'].startswith('/learn') and message['from']['id'] in self.admins:
             self.learn(message)
@@ -154,16 +154,41 @@ class Lampone(Bot):
         
         if message['text'] == "/s" and message['from']['id'] in self.admins:
             self.megahal.sync()
+            self.megahal._MegaHAL__brain.db.close()
+            self.megahal = MegaHAL(brainfile=self.brainfile_name)
             self.sendMessage(chat_id,"Sync db")
+            return       
+        
+        if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
+            self.autolearn()
+            return              
+        
+        if message['text'] == "/listen" and message['from']['id'] in self.admins:
+            self.sendMessage(chat_id,"Listening enabled, stop with /stoplisten")
+            if not chat_id in self.listening:
+                self.listening.append(chat_id)
             return        
         
+        if message['text'] == "/stoplisten" and message['from']['id'] in self.admins:
+            self.sendMessage(chat_id,"Listening stopped")
+            if chat_id in self.listening:
+                self.listening.pop(self.listening.index(chat_id))
+            return                
+        
         if not message['text'].startswith('/'):
+            for ll in self.listening:
+                self.sendMessage(ll,"<-- %s" % message['text'])
+                
             self.log_learn(message['text'])
             self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
             self.action_typing(chat_id)
             reply = self.megahal.get_reply(message['text'])
             self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
             self.sendMessage(chat_id,reply)
+
+            for ll in self.listening:
+                self.sendMessage(ll,"--> %s" % reply)
+            
     
 
 if __name__ == '__main__':
