@@ -38,14 +38,25 @@ class Lampone(Bot):
                 pass
             
     def log(msg):
-        with open(os.path.join(os.path.split(__file__)[0],"lampone.log"),"a") as logfile:
-            logfile.write("%s\n" % msg)
+        try:
+            with open(os.path.join(os.path.split(__file__)[0],"lampone.log"),"a") as logfile:
+                logfile.write("%s\n" % msg)
+        except Exception as e:
+            print(e)
+
+    def log_learn(msg):
+        try:
+            with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"a") as logfile:
+                logfile.write("%s\n" % msg)
+        except Exception as e:
+            print(e)
 
     def learn(self,message):
         lines = message['text'].splitlines()[1:]
         for l in lines:
             print("learning: %s" % l)
             self.megahal.learn(l)
+            self.log_learn(l)
         self.megahal.sync()
 
 
@@ -125,6 +136,7 @@ class Lampone(Bot):
             return        
         
         if not message['text'].startswith('/'):
+            self.log_learn(message['text'])
             self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
             reply = self.megahal.get_reply(message['text'])
             self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
