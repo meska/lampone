@@ -95,7 +95,7 @@ class Lampone(Bot):
             */1 * * * * [ `ps aux | grep python3 | grep lampone | grep -v grep | wc -l` -eq 0 ] && /usr/bin/python3 /home/pi/lampone/lampone.py  > /dev/null 2>&1
             """
             self.sendMessage(chat_id,"Updating...")
-            res = os.popen("cd %s && git pull" % os.path.join(os.path.split(__file__)[0])).read()
+            res = os.popen("cd %s && git fetch --all && git reset --hard origin" % os.path.join(os.path.split(__file__)[0])).read()
             self.sendMessage(chat_id,res)
             self.sendMessage(chat_id,"Restarting...")
             self.stop = True
@@ -124,7 +124,7 @@ class Lampone(Bot):
             return
         
         if message['text'] == "/help":
-            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond\s")
+            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond")
             return        
         
         if message['text'] == "/stop":
