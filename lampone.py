@@ -88,9 +88,22 @@ class Lampone(Bot):
             self.learn(message)
             return
         
+        if message['text'].startswith('/update') and message['from']['id'] in self.admins:
+            """
+            Bot updates from git and then quits, 
+            to reload automatically use a cron like this:
+            */1 * * * * [ `ps aux | grep python3 | grep lampone | grep -v grep | wc -l` -eq 0 ] && /usr/bin/python3 /home/pi/lampone/lampone.py  > /dev/null 2>&1
+            """
+            self.sendMessage(chat_id,"Updating...")
+            res = os.popen("cd %s && git pull" % os.path.join(os.path.split(__file__)[0])).read()
+            self.sendMessage(chat_id,res)
+            self.sendMessage(chat_id,"Restarting...")
+            self.stop = True
+            return        
+        
         if message['text'].startswith('/f') and message['from']['id'] in self.admins:
             ## fortune auto learning, needs fortune-mod installed
-            ## check for param
+            ## check for params
             count = 1
             if len(message['text'].split()) > 1:
                 param = message['text'].split()[1]
@@ -111,7 +124,7 @@ class Lampone(Bot):
             return
         
         if message['text'] == "/help":
-            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond")
+            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond\s")
             return        
         
         if message['text'] == "/stop":
@@ -149,4 +162,7 @@ if __name__ == '__main__':
         l = Lampone(cf['telegram']['token'],admins=cf['telegram']['admins'])
         #l.clearWebHook()
         print(l.get('getMe'))
+        for admin in l.admins:
+            # notify admins when online
+            l.sendMessage(admin,"Lampone is Online!")
         l.getUpdates()

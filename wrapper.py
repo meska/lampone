@@ -13,6 +13,7 @@ class Bot:
     """"""
     api_url = "https://api.telegram.org"
     offset = 0 
+    stop = False
     #----------------------------------------------------------------------
     def __init__(self,token):
         """Constructor"""
@@ -110,6 +111,11 @@ class Bot:
         timeout = 60
         geturl =  "%s/bot%s/getUpdates" % (self.api_url,self.token)
         while True:
+            if self.stop:
+                # ask for the next message before exit ( if not it will loop )
+                dt = dict(offset=self.offset, timeout=timeout)
+                j = requests.post(geturl, data=dt, timeout=None).json()
+                break                 
             try:
                 dt = dict(offset=self.offset, timeout=timeout)
                 try:
@@ -126,6 +132,7 @@ class Bot:
                     if 'document' in m:
                         self.parsedocument(cid,m)                    
                     self.offset = r['update_id'] + 1
+           
             except:
                 from time import sleep
                 sleep(60)
