@@ -6,6 +6,7 @@
   Created: 06/25/15
 """
 import requests,json,os
+from time import sleep
 DEBUG_GET_POST = False
 
 ########################################################################
@@ -117,7 +118,7 @@ class Bot:
                     dt = dict(offset=self.offset, timeout=timeout)
                     j = requests.post(geturl, data=dt, timeout=None).json()
                 except:
-                    pass
+                    sleep(60)
                 break                 
             try:
                 dt = dict(offset=self.offset, timeout=timeout)
@@ -137,5 +138,4 @@ class Bot:
                     self.offset = r['update_id'] + 1
            
             except:
-                from time import sleep
                 sleep(60)
