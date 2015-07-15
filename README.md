@@ -1,4 +1,5 @@
 # Lampone Bot
+@LamponeBot
 
 Prove di bot telegram:
 
