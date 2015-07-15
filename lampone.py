@@ -247,9 +247,7 @@ class Lampone(Bot):
             if chat_id in self.groupmode:
                 gm = self.groupmode[chat_id]
                 if gm == 2:
-                    if 'lampone' in message['text'].lower():
-                        rispondi = True
-                    else:
+                    if not 'lampone' in message['text'].lower():
                         if len(message['text'].split()) > 3:
                             rispondi = True if randrange(0,3) == 0 else False
                         else:
@@ -260,7 +258,7 @@ class Lampone(Bot):
             else:
                 # default set group mode to 2
                 if chat_id < 0:
-                    self.sendMessage(chat_id,'Lampone is here!\ndefault group mode is 2, use /groupmode to switch')
+                    #self.sendMessage(chat_id,'Lampone is here!\ndefault group mode is 2, use /groupmode to switch')
                     self.groupmode[chat_id] = 2
                     rispondi = False
                         
