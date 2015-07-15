@@ -233,6 +233,11 @@ class Lampone(Bot):
                 self.sendMessage(ll,"<-- %s" % message['text'])
 
             #self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
+
+
+            if len(message['text'].split()) < 2:
+                # nothing to learn
+                return
             
             if len(message['text'].split()) > 50:
                 # spam received ignore
