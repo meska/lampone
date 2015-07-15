@@ -247,10 +247,13 @@ class Lampone(Bot):
             if chat_id in self.groupmode:
                 gm = self.groupmode[chat_id]
                 if gm == 2:
-                    if len(message['text'].split()) > 3:
-                        rispondi = True if randrange(0,3) == 0 else False
+                    if 'lampone' in message['text'].lower():
+                        rispondi = True
                     else:
-                        rispondi = True if randrange(0,7) == 0 else False
+                        if len(message['text'].split()) > 3:
+                            rispondi = True if randrange(0,3) == 0 else False
+                        else:
+                            rispondi = True if randrange(0,7) == 0 else False
                 if gm == 3:
                     if not 'lampone' in message['text'].lower():
                         rispondi = False
