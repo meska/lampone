@@ -116,6 +116,9 @@ class Lampone(Bot):
     def parsemessage(self,chat_id,message):
         print("Messaggio ricevuto da %s" % message['from'] )
         print(message['text'])
+        if self.stop:
+            # stopping, ignore messages
+            return
         
 
         if self.lastbackup != datetime.now().hour:
@@ -136,6 +139,8 @@ class Lampone(Bot):
             res = os.popen("cd %s && git fetch --all && git reset --hard origin" % os.path.join(os.path.split(__file__)[0])).read()
             self.sendMessage(chat_id,res)
             self.sendMessage(chat_id,"Restarting...")
+            self.megahal.sync()
+            self.megahal._MegaHAL__brain.db.close()            
             self.stop = True
             return        
         
@@ -170,7 +175,7 @@ class Lampone(Bot):
         
         if message['text'].startswith("/g1"):
             if chat_id > 0:
-                self.sendMessage(chat_id,"This is not a group.")
+                self.sendMessage(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
             else:
                 self.groupmode[chat_id] = 1
                 self.sendMessage(chat_id,"Groupmode 1 enabled",reply_markup={'hide_keyboard':True})
@@ -178,7 +183,7 @@ class Lampone(Bot):
         
         if message['text'].startswith("/g2"):
             if chat_id > 0:
-                self.sendMessage(chat_id,"This is not a group.")
+                self.sendMessage(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
             else:
                 self.groupmode[chat_id] = 2
                 self.sendMessage(chat_id,"Groupmode 2 enabled",reply_markup={'hide_keyboard':True})
@@ -186,14 +191,14 @@ class Lampone(Bot):
         
         if message['text'].startswith("/g3"):
             if chat_id > 0:
-                self.sendMessage(chat_id,"This is not a group.")
+                self.sendMessage(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
             else:
                 self.groupmode[chat_id] = 3
                 self.sendMessage(chat_id,"Groupmode 3 enabled",reply_markup={'hide_keyboard':True})
             return        
         
         if message['text'] == "/help":
-            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond")
+            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond\nTry /groupmode for limit group interaction")
             return        
         
         if message['text'] == "/stop":
@@ -229,6 +234,14 @@ class Lampone(Bot):
 
             self.log_learn(message['text'])
             #self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
+            
+            if len(message['text'].split()) > 50:
+                # spam received ignore
+                return
+
+            if 'http' in message['text']:
+                # spam received ignore
+                return
 
             rispondi = True
             if chat_id in self.groupmode:
@@ -241,6 +254,12 @@ class Lampone(Bot):
                 if gm == 3:
                     if not 'lampone' in message['text'].lower():
                         rispondi = False
+            else:
+                # default set group mode to 2
+                self.sendMessage(chat_id,'Lampone is here!\ndefault group mode is 2, use /groupmode to switch')
+                self.groupmode[chat_id] = 2
+                rispondi = False
+                        
                         
             if rispondi:
                 self.action_typing(chat_id)
