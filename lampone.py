@@ -232,7 +232,6 @@ class Lampone(Bot):
             for ll in self.listening:
                 self.sendMessage(ll,"<-- %s" % message['text'])
 
-            self.log_learn(message['text'])
             #self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
             
             if len(message['text'].split()) > 50:
@@ -242,6 +241,8 @@ class Lampone(Bot):
             if 'http' in message['text']:
                 # spam received ignore
                 return
+            
+            self.log_learn(message['text'])
 
             rispondi = True
             if chat_id in self.groupmode:
