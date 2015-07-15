@@ -256,9 +256,10 @@ class Lampone(Bot):
                         rispondi = False
             else:
                 # default set group mode to 2
-                self.sendMessage(chat_id,'Lampone is here!\ndefault group mode is 2, use /groupmode to switch')
-                self.groupmode[chat_id] = 2
-                rispondi = False
+                if chat_id < 0:
+                    self.sendMessage(chat_id,'Lampone is here!\ndefault group mode is 2, use /groupmode to switch')
+                    self.groupmode[chat_id] = 2
+                    rispondi = False
                         
                         
             if rispondi:
