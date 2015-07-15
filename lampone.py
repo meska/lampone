@@ -235,7 +235,7 @@ class Lampone(Bot):
             #self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
 
 
-            if len(message['text'].split()) < 2:
+            if len(message['text'].split()) < 3:
                 # nothing to learn
                 return
             
