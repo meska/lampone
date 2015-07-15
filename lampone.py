@@ -56,13 +56,16 @@ class Lampone(Bot):
                 pass
             
     def log(self,msg):
-        try:
-            with open(os.path.join(os.path.split(__file__)[0],"lampone.log"),"a") as logfile:
-                logfile.write("%s\n" % msg)
-        except Exception as e:
-            print(e)
+        # meglio non loggare nulla va
+        return
+        #try:
+            #with open(os.path.join(os.path.split(__file__)[0],"lampone.log"),"a") as logfile:
+                #logfile.write("%s\n" % msg)
+        #except Exception as e:
+            #print(e)
 
     def log_learn(self,msg):
+        # loggo solo le frasi in caso il db si smerdi
         try:
             with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"a") as logfile:
                 logfile.write("%s\n" % msg)
@@ -225,7 +228,7 @@ class Lampone(Bot):
                 self.sendMessage(ll,"<-- %s" % message['text'])
 
             self.log_learn(message['text'])
-            self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
+            #self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
 
             rispondi = True
             if chat_id in self.groupmode:
@@ -242,7 +245,7 @@ class Lampone(Bot):
             if rispondi:
                 self.action_typing(chat_id)
                 reply = self.megahal.get_reply(message['text'])
-                self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
+                #self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
                 self.sendMessage(chat_id,reply)
     
                 for ll in self.listening:
