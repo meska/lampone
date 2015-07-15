@@ -9,4 +9,5 @@ se utilizzato in gruppo si può limitarne le risposte con il comando /groupmode.
 le risposte che riceverete dipendono da quello che gli inviate, non c'è una base dati iniziale.
 
 Provami: https://telegram.me/LamponeBot
+
 Ratami: https://telegram.me/storebot?start=lamponebot
