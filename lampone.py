@@ -4,6 +4,14 @@
   Author: Meska
   Purpose: Lampone telegram bot, chat to @LamponeBot
   Created: 07/12/15
+  
+
+  commands
+  start - Starts!
+  stop - stops ?
+  groupmode - Set groupchat mode
+  
+  
 """
 import os,sys
 from wrapper import Bot
@@ -12,6 +20,7 @@ from threading import Timer
 from shutil import copy2
 from datetime import datetime,timedelta
 from configparser import ConfigParser
+from random import randrange
 
 class Lampone(Bot):
     
@@ -24,7 +33,8 @@ class Lampone(Bot):
         self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
         # TODO in some os shelve appends .db to filename
         self.brainfile_name_real = os.path.join(os.path.split(__file__)[0],"lampone.brain.db")
-
+        self.groupmode = {}
+        
         if os.path.exists(self.brainfile_name) or os.path.exists(self.brainfile_name_real):
             # need learning
             self.need_learn = False
@@ -147,6 +157,37 @@ class Lampone(Bot):
         if message['text'] == "/start":
             self.sendMessage(chat_id,"Welcome to Lampone Bot")
             return
+
+        if message['text'] == "/groupmode":
+            if chat_id > 0:
+                self.sendMessage(chat_id,"This is not a group.")
+            else:
+                self.sendMessage(chat_id,"Select Group Mode:",reply_markup={'keyboard':[['/g1 Respond all messages'],['/g2 Respond some messages'],['/g3 Respond only for Lampone'],]})
+            return
+        
+        if message['text'].startswith("/g1"):
+            if chat_id > 0:
+                self.sendMessage(chat_id,"This is not a group.")
+            else:
+                self.groupmode[chat_id] = 1
+                self.sendMessage(chat_id,"Groupmode 1 enabled",reply_markup={'hide_keyboard':True})
+            return
+        
+        if message['text'].startswith("/g2"):
+            if chat_id > 0:
+                self.sendMessage(chat_id,"This is not a group.")
+            else:
+                self.groupmode[chat_id] = 2
+                self.sendMessage(chat_id,"Groupmode 2 enabled",reply_markup={'hide_keyboard':True})
+            return
+        
+        if message['text'].startswith("/g3"):
+            if chat_id > 0:
+                self.sendMessage(chat_id,"This is not a group.")
+            else:
+                self.groupmode[chat_id] = 3
+                self.sendMessage(chat_id,"Groupmode 3 enabled",reply_markup={'hide_keyboard':True})
+            return        
         
         if message['text'] == "/help":
             self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond")
@@ -182,16 +223,33 @@ class Lampone(Bot):
         if not message['text'].startswith('/'):
             for ll in self.listening:
                 self.sendMessage(ll,"<-- %s" % message['text'])
-                
+
             self.log_learn(message['text'])
             self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
-            self.action_typing(chat_id)
-            reply = self.megahal.get_reply(message['text'])
-            self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
-            self.sendMessage(chat_id,reply)
 
-            for ll in self.listening:
-                self.sendMessage(ll,"--> %s" % reply)
+            rispondi = True
+            if chat_id in self.groupmode:
+                gm = self.groupmode[chat_id]
+                if gm == 2:
+                    if len(message['text'].split()) > 3:
+                        rispondi = True if randrange(0,3) == 0 else False
+                    else:
+                        rispondi = True if randrange(0,7) == 0 else False
+                if gm == 3:
+                    if not 'lampone' in message['text'].lower():
+                        rispondi = False
+                        
+            if rispondi:
+                self.action_typing(chat_id)
+                reply = self.megahal.get_reply(message['text'])
+                self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
+                self.sendMessage(chat_id,reply)
+    
+                for ll in self.listening:
+                    self.sendMessage(ll,"--> %s" % reply)
+            else:
+                # learn always
+                self.megahal.learn(message['text'])
             
     
 
