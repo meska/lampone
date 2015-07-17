@@ -45,7 +45,7 @@ class Lampone(Bot):
             os.unlink(self.brainfile_name)
            
         if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone.brain.db")):
-            os.unlink(self.os.path.join(os.path.split(__file__)[0],"lampone.brain.db"))
+            os.unlink(os.path.join(os.path.split(__file__)[0],"lampone.brain.db"))
             
         self.megahal = MegaHAL(brainfile=self.brainfile_name)
         self.autolearn()
