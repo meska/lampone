@@ -27,18 +27,14 @@ class Lampone(Bot):
     listening = []
     badboys = {}
     groupmode = {}
+    admins = []
 
     
-    def __init__(self, token,admins="",redis=None):
+    def __init__(self, token,admins=""):
         super().__init__(token) # init classe principale
 
         self.admins = [ int(x) for x in admins.split(",") ]
-        
-        
-
         self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
-        
-        
         
         # delete old brain on restart
         if os.path.exists(self.brainfile_name):
@@ -50,12 +46,9 @@ class Lampone(Bot):
         self.megahal = MegaHAL(brainfile=self.brainfile_name)
         self.autolearn()
             
-    def __del__(self):
-        # salva cose varie
-        pass 
 
     def log_learn(self,msg):
-        # loggo solo le frasi in caso il db si smerdi
+        # TODO: loggare solo quelle di un certo peso
         try:
             with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"a") as logfile:
                 logfile.write("%s\n" % msg)
@@ -97,6 +90,7 @@ class Lampone(Bot):
                 
         self.megahal.sync()
         self.sendMessage(self.admins[0],"Autolearn Finished")
+        self.listening.append(self.admins[0])
 
         
     def parsedocument(self,chat_id,message):
