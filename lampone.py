@@ -41,11 +41,11 @@ class Lampone(Bot):
         
         
         # delete old brain on restart
-        if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone.brain")):
+        if os.path.exists(self.brainfile_name):
             os.unlink(self.brainfile_name)
            
         if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone.brain.db")):
-            os.unlink(self.brainfile_name_real)
+            os.unlink(self.os.path.join(os.path.split(__file__)[0],"lampone.brain.db"))
             
         self.megahal = MegaHAL(brainfile=self.brainfile_name)
         self.autolearn()
