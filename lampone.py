@@ -81,8 +81,12 @@ class Lampone(Bot):
                     
                 if ok:
                     print("learning: %s" % l)
-                    self.megahal.learn(l)
-                    lines.append(l.lower())
+                    try:
+                        self.megahal.learn(l)
+                        lines.append(l.lower())
+                    except:
+                        pass
+                    
 
         with open("lampone_learn_cleaned.txt","wb") as logfile:
             for l in lines:
@@ -253,18 +257,20 @@ class Lampone(Bot):
                     self.groupmode[chat_id] = 2
                     rispondi = False
                         
-                        
-            if rispondi:
-                self.action_typing(chat_id)
-                reply = self.megahal.get_reply(message['text'])
-                #self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
-                self.sendMessage(chat_id,reply)
-    
-                for ll in self.listening:
-                    self.sendMessage(ll,"--> %s" % reply)
-            else:
-                # learn always
-                self.megahal.learn(message['text'])
+            try:  
+                if rispondi:
+                    self.action_typing(chat_id)
+                    reply = self.megahal.get_reply(message['text'])
+                    #self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
+                    self.sendMessage(chat_id,reply)
+        
+                    for ll in self.listening:
+                        self.sendMessage(ll,"--> %s" % reply)
+                else:
+                    # learn always
+                    self.megahal.learn(message['text'])
+            except:
+                pass
             
     
 
