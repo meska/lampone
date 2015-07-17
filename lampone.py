@@ -51,8 +51,9 @@ class Lampone(Bot):
     def log_learn(self,msg):
         # TODO: loggare solo quelle di un certo peso
         try:
-            with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"a") as logfile:
-                logfile.write("%s\n" % msg)
+            with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"ab") as logfile:
+                logfile.write(msg.encode('utf8'))
+                logfile.write(b"\n")
         except Exception as e:
             print(e)
 
@@ -265,10 +266,15 @@ class Lampone(Bot):
                 if rispondi:
                     self.action_typing(chat_id)
                     reply = self.megahal.get_reply_nolearn(text)
-                    self.sendMessage(chat_id,reply)
+
+                    # rispondi se e diversa, copiare no buono
+                    if not reply.lower().strip('.') == text.lower():
+                        self.sendMessage(chat_id,reply)
+                        for ll in self.listening:
+                            self.sendMessage(ll,"--> %s" % reply)
+
+
         
-                    for ll in self.listening:
-                        self.sendMessage(ll,"--> %s" % reply)
             except Exception as e:
                 pass
                 #self.sendMessage(self.admins[0],"Learning error: %s\nbad text:\n%s" % (e,text))
