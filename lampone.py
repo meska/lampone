@@ -90,6 +90,10 @@ class Lampone(Bot):
                     print("learning: %s" % l)
                     self.megahal.learn(l)
                     lines.append(l.lower())
+
+        with open("lampone_learn_cleaned.txt","wb") as logfile:
+            for l in lines:
+                logfile.write((l + "\n").encode('utf8'))
                 
         self.megahal.sync()
         self.sendMessage(self.admins[0],"Autolearn Finished")
