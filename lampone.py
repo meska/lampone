@@ -21,6 +21,7 @@ from shutil import copy2
 from datetime import datetime,timedelta
 from configparser import ConfigParser
 from random import randrange
+import re
 
 class Lampone(Bot):
     
@@ -219,58 +220,58 @@ class Lampone(Bot):
             for ll in self.listening:
                 self.sendMessage(ll,"<-- %s" % message['text'])
 
+            delta = delta = datetime.now() - datetime.fromtimestamp(message['date'])
             learn = True
             rispondi = True
 
+            text = message['text'].strip().strip("'").strip('"')            
+            
+            # se passati più di 30 minuti non rispondo, probabilmente è crashato il bot
+            if delta.total_seconds()/60 > 30.0:
+                rispondi = False
 
-            if len(message['text'].split()) < 3:
-                # learn at least 2 words
-                learn = False
+            # skip links 
+            
+            if 'http' in text.lower(): learn = False # don't learn urls
+            if re.match('.*[\w\d]+\.\w{2,4}',text) : learn = False # try don't learn hostnames
+            if len(text.split()) < 3: learn = False # don't learn shorter phrases
+            if re.match('.*@\w+',text): learn = False # don't learn usernames
+            if len(text.split()) > 50: learn = False # don't learn too long messages
 
             
-            if len(message['text'].split()) > 50:
-                # spam received ignore
-                return
-
-            if 'http' in message['text']:
-                # spam received ignore
-                return
-            
-            self.log_learn(message['text'])
-
-            rispondi = True
             if chat_id in self.groupmode:
                 gm = self.groupmode[chat_id]
+
                 if gm == 2:
-                    if not 'lampone' in message['text'].lower():
-                        if len(message['text'].split()) > 3:
-                            rispondi = True if randrange(0,3) == 0 else False
-                        else:
-                            rispondi = True if randrange(0,7) == 0 else False
+                    # responds sometimes
+                    if not 'lampone' in text.lower():
+                        rispondi = True if randrange(0,5) == 0 else False
+                        
                 if gm == 3:
-                    if not 'lampone' in message['text'].lower():
+                    # responds only if asked
+                    if not 'lampone' in text.lower():
                         rispondi = False
             else:
-                # default set group mode to 2
                 if chat_id < 0:
-                    #self.sendMessage(chat_id,'Lampone is here!\ndefault group mode is 2, use /groupmode to switch')
+                    # default set group mode to 2 in groups
                     self.groupmode[chat_id] = 2
                     rispondi = False
-                        
-            try:  
+
+            try: 
+                if learn:
+                    self.log_learn(text) # log messages for retrain
+                    self.megahal.learn(text)
+             
                 if rispondi:
                     self.action_typing(chat_id)
-                    reply = self.megahal.get_reply(message['text'])
-                    #self.log('%s --- MSG TO:%s --- %s' % (datetime.now(),message['from'],reply))
+                    reply = self.megahal.get_reply_nolearn(text)
                     self.sendMessage(chat_id,reply)
         
                     for ll in self.listening:
                         self.sendMessage(ll,"--> %s" % reply)
-                else:
-                    # learn always
-                    self.megahal.learn(message['text'])
-            except:
+            except Exception as e:
                 pass
+                #self.sendMessage(self.admins[0],"Learning error: %s\nbad text:\n%s" % (e,text))
             
     
 
