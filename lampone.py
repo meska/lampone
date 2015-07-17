@@ -304,6 +304,5 @@ if __name__ == '__main__':
             # notify admins when online
             l.action_typing(admin)
             l.sendMessage(admin,"Lampone is Online!")
-            l.listening.append(admin)
             
         l.getUpdates()
