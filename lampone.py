@@ -24,45 +24,35 @@ from random import randrange
 
 class Lampone(Bot):
     
-    def __init__(self, token,admins=""):
+    listening = []
+    badboys = {}
+    groupmode = {}
+
+    
+    def __init__(self, token,admins="",redis=None):
         super().__init__(token) # init classe principale
+
         self.admins = [ int(x) for x in admins.split(",") ]
-        # init megaHal    
-        self.lastbackup = None
-        self.listening = []
-        self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
-        # TODO in some os shelve appends .db to filename
-        self.brainfile_name_real = os.path.join(os.path.split(__file__)[0],"lampone.brain.db")
-        self.groupmode = {}
         
-        if os.path.exists(self.brainfile_name) or os.path.exists(self.brainfile_name_real):
-            # need learning
-            self.need_learn = False
-        else:
-            self.need_learn = True
+        
+
+        self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
+        
+        
+        
+        # delete old brain on restart
+        if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone.brain")):
+            os.unlink(self.brainfile_name)
+           
+        if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone.brain.db")):
+            os.unlink(self.brainfile_name_real)
             
-        try:
-            self.megahal = MegaHAL(brainfile=self.brainfile_name)
-        except Exception as e:
-            print("Database Error: %s"% e)
-            # starts with new db
-            try:
-                os.unlink(self.brainfile_name)
-            except:
-                pass
-            try:
-                os.unlink(self.brainfile_name_real)
-            except:
-                pass
+        self.megahal = MegaHAL(brainfile=self.brainfile_name)
+        self.autolearn()
             
-    def log(self,msg):
-        # meglio non loggare nulla va
-        return
-        #try:
-            #with open(os.path.join(os.path.split(__file__)[0],"lampone.log"),"a") as logfile:
-                #logfile.write("%s\n" % msg)
-        #except Exception as e:
-            #print(e)
+    def __del__(self):
+        # salva cose varie
+        pass 
 
     def log_learn(self,msg):
         # loggo solo le frasi in caso il db si smerdi
@@ -73,6 +63,7 @@ class Lampone(Bot):
             print(e)
 
     def learn(self,message):
+        # manual learn
         lines = message['text'].splitlines()[1:]
         for l in lines:
             print("learning: %s" % l)
@@ -82,33 +73,27 @@ class Lampone(Bot):
 
     def autolearn(self):
         # learns from previous chats
-        if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt")):
-            with open(os.path.join(os.path.split(__file__)[0],"lampone_learn.txt"),"rb") as learnfile:
-                for r in learnfile.readlines():
-                    l = r.decode('utf8').strip()
-                    try:
-                        print("learning: %s" % l)
-                        self.megahal.learn(l)
-                    except:
-                        pass
-            self.megahal.sync()
-
-
-    def backupBrain(self):
-        # backup brain file in case of crash
-        print("Brain Backup! %s" % datetime.now().hour)
+        self.sendMessage(self.admins[0],"Autolearn Start")
+        lines = []
+        with open("lampone_learn.txt","rb") as logfile:
+            for l in logfile.readlines():
+                l = l.decode('utf8').strip()
+                ok = True
+                if 'lampone' in l.lower(): ok = False
+                if 'http' in l.lower(): ok = False
+                if len(l) < 3: ok = False
+                if l.lower() in lines: ok = False
+                if len(l.split()) < 3: ok = False
+                if '@' in l: ok = False
+                    
+                if ok:
+                    print("learning: %s" % l)
+                    self.megahal.learn(l)
+                    lines.append(l.lower())
+                
         self.megahal.sync()
-        self.megahal._MegaHAL__brain.db.close()
+        self.sendMessage(self.admins[0],"Autolearn Finished")
 
-        # check for brainfile ext
-        if not os.path.exists(self.brainfile_name_real):
-            self.brainfile_name_real = self.brainfile_name
-            
-        if os.path.exists("%s.%s" % (self.brainfile_name_real,datetime.now().hour)):
-            os.unlink("%s.%s" % (self.brainfile_name_real,datetime.now().hour))
-        copy2(self.brainfile_name_real, "%s.%s" % (self.brainfile_name_real,datetime.now().hour))
-        
-        self.megahal = MegaHAL(brainfile=self.brainfile_name)
         
     def parsedocument(self,chat_id,message):
         print("Documento ricevuto da %s" % message['from'] )
@@ -121,9 +106,9 @@ class Lampone(Bot):
             return
         
 
-        if self.lastbackup != datetime.now().hour:
-            self.lastbackup = datetime.now().hour
-            self.backupBrain()
+        #if self.lastbackup != datetime.now().hour:
+        #    self.lastbackup = datetime.now().hour
+        #    self.backupBrain()
 
         if message['text'].startswith('/learn') and message['from']['id'] in self.admins:
             self.learn(message)
@@ -232,12 +217,14 @@ class Lampone(Bot):
             for ll in self.listening:
                 self.sendMessage(ll,"<-- %s" % message['text'])
 
-            #self.log('%s --- MSG FROM:%s --- %s' % (datetime.now(),message['from'],message['text']))
+            learn = True
+            rispondi = True
 
 
-            if len(message['text']) < 3:
-                # nothing to learn
-                return
+            if len(message['text'].split()) < 3:
+                # learn at least 2 words
+                learn = False
+
             
             if len(message['text'].split()) > 50:
                 # spam received ignore
@@ -301,13 +288,18 @@ if __name__ == '__main__':
     if cf['telegram']['token'] == "YOUR TOKEN HERE":
         print("Token not defined, check config!")    
     else:
-        l = Lampone(cf['telegram']['token'],admins=cf['telegram']['admins'])
+
+        l = Lampone(
+            cf['telegram']['token'],
+            admins=cf['telegram']['admins']
+        )
         #l.clearWebHook()
         print(l.get('getMe'))
-        if l.need_learn:
-            l.autolearn()        
+            
         for admin in l.admins:
             # notify admins when online
             l.action_typing(admin)
             l.sendMessage(admin,"Lampone is Online!")
+            l.listening.append(admin)
+            
         l.getUpdates()
