@@ -40,6 +40,7 @@ class Lampone(Bot):
     groupmode = {}
     admins = []
     brains = {}
+    reply_time = 3000
     
     def __init__(self, token,admins=""):
         super().__init__(token) # init classe principale
@@ -90,7 +91,7 @@ class Lampone(Bot):
             self.brains[lang] = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
             if lang in self.languages:
                 self.brains[lang].set_stemmer(lang)
-        return self.brains[lang].reply(msg,loop_ms=2000)
+        return self.brains[lang].reply(msg,loop_ms=self.reply_time)
     
     def sendMessageThreaded(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
         Thread(target=self.sendMessage,kwargs={
@@ -183,6 +184,18 @@ class Lampone(Bot):
         
         if message['text'] == "/start":
             self.sendMessageThreaded(chat_id,"Welcome to Lampone Bot")
+            return
+
+        if message['text'].startswith("/rt")  and message['from']['id'] in self.admins:
+            if message['text'].split()[-1].isdigit():
+                val = int(message['text'].split()[-1])
+                if val < 30:
+                    self.reply_time = int(message['text'].split()[-1])*1000
+                    self.sendMessageThreaded(chat_id,"Reply Timer set to %s seconds" % val)
+                else:
+                    self.sendMessageThreaded(chat_id,"Bad n. of seconds: %s" % message['text'].split()[-1] )
+            else:
+                self.sendMessageThreaded(chat_id,"Bad n. of seconds: %s" % message['text'].split()[-1] )
             return
 
         if message['text'] == "/groupmode":
