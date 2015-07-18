@@ -90,7 +90,7 @@ class Lampone(Bot):
             self.brains[lang] = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
             if lang in self.languages:
                 self.brains[lang].set_stemmer(lang)
-        return self.brains[lang].reply(msg)
+        return self.brains[lang].reply(msg,loop_ms=2000)
     
     def sendMessageThreaded(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
         Thread(target=self.sendMessage,kwargs={
