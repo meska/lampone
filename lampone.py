@@ -191,6 +191,7 @@ class Lampone(Bot):
         
         if message['text'] == "/help":
             self.sendMessageThreaded(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond\nTry /groupmode for limit group interaction")
+            self.sendMessageThreaded(chat_id,"Vote for lampone here if you like it: https://telegram.me/storebot?start=lamponebot")
             return        
         
         if message['text'] == "/stop":
