@@ -109,24 +109,30 @@ class Lampone(Bot):
         lines = []
         with open("lampone_learn.txt","rb") as logfile:
             for l in logfile.readlines():
-                l = l.decode('utf8').strip()
-                ok = True
-                if 'lampone' in l.lower(): ok = False
-                if 'http' in l.lower(): ok = False
-                if len(l) < 3: ok = False
-                if l.lower() in lines: ok = False
-                if len(l.split()) < 3: ok = False
-                if '@' in l: ok = False
-                    
-                if ok:
-                    lang = self.learn(l)
-                    print("learned: %s -- %s" % (lang,l))
-                    lines.append(l.lower())
+                try:
+                    l = l.decode('utf8').strip()
+                    ok = True
+                    if 'lampone' in l.lower(): ok = False
+                    if 'http' in l.lower(): ok = False
+                    if len(l) < 3: ok = False
+                    if l.lower() in lines: ok = False
+                    if len(l.split()) < 3: ok = False
+                    if '@' in l: ok = False
+                        
+                    if ok:
+                        lang = self.learn(l)
+                        print("learned: %s -- %s" % (lang,l))
+                        lines.append(l.lower())
+                except:
+                    pass
                     
 
         with open("lampone_learn_cleaned.txt","wb") as logfile:
             for l in lines:
-                logfile.write((l + "\n").encode('utf8'))
+                try:
+                    logfile.write((l + "\n").encode('utf8'))
+                except:
+                    pass
                 
         self.sendMessageThreaded(self.admins[0],"Autolearn Finished")
         self.listening.append(self.admins[0])
@@ -239,7 +245,10 @@ class Lampone(Bot):
             return        
         
         if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
-            self.autolearn()
+            try:
+                self.autolearn()
+            except:
+                pass
             return              
         
         if message['text'] == "/listen" and message['from']['id'] in self.admins:
