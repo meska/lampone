@@ -317,6 +317,7 @@ class Lampone(Bot):
                     # se proprio devo rispondere
                     self.action_typing(chat_id)
                     try:
+                        print("get reply l:%s text:%s" % (lang,text))
                         reply = self.reply(lang,text)
                     except Exception as e:
                         # manda un messaggio a caso se non gli piace ?
