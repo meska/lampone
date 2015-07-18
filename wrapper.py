@@ -7,6 +7,8 @@
 """
 import requests,json,os
 from time import sleep
+import logging
+logging.getLogger(__name__)
 DEBUG_GET_POST = False
 
 ########################################################################
@@ -18,25 +20,25 @@ class Bot:
     #----------------------------------------------------------------------
     def __init__(self,token):
         """Constructor"""
-        print("Telegram Bot Starting")
+        logging.info("Telegram Bot Starting")
         self.token = token
   
     def setWebhook(self):
         whurl = "%s" % (os.getenv('TELEGRAM_WEBHOOK_URL'))
         r = self.post('setWebhook',{'url':whurl.replace('http:','https:')})
-        print("Telegram WebHook Setup: %s" % r)
+        logging.info("Telegram WebHook Setup: %s" % r)
             
     def clearWebHook(self):
         r = self.post('setWebhook',{'url':''})
-        print("Telegram WebHook Cleared: %s" % r)            
+        logging.info("Telegram WebHook Cleared: %s" % r)            
   
     def get(self,method,params=None):
         
-        if DEBUG_GET_POST: print("GET --> %s %s" % (method,params))
+        if DEBUG_GET_POST: logging.info("GET --> %s %s" % (method,params))
         
         r = requests.get("%s/bot%s/%s" % (self.api_url,self.token,method),params,timeout=30)
         
-        if DEBUG_GET_POST: print("GET <-- %s" % r)
+        if DEBUG_GET_POST: logging.info("GET <-- %s" % r)
             
         if r.status_code == requests.codes.ok:
             j = r.json()
@@ -44,18 +46,15 @@ class Bot:
                 if j['result']:
                     return j['result']
         else:
-            print("GET Error %s" % r.text)
+            logging.info("GET Error %s" % r.text)
                     
         
         return False
   
     def post(self,method,params=None,files=None):
-        
-        if DEBUG_GET_POST: print("POST --> %s %s" % (method,params))
-
+        logging.debug("POST --> %s %s" % (method,params))
         r = requests.post("%s/bot%s/%s" % (self.api_url,self.token,method),params,files=files,timeout=60)
-        
-        if DEBUG_GET_POST: print("POST <-- %s" % (r))
+        logging.debug("POST <-- %s" % (r))
             
         if r.status_code == requests.codes.ok:
             j = r.json()
@@ -63,12 +62,12 @@ class Bot:
                 if j['result']:
                     return j['result']
         else:
-            print("POST Error %s" % r.text)
+            logging.error("POST Error %s" % r.text)
         return False        
   
     def webhook(self,request):
         data = json.loads(request.body.decode('utf8'))
-        print("<-- WH %s" % data['message'])
+        logging.info("<-- WH %s" % data['message'])
         message_received.send(self,message=data['message'])
         return 'ok'
   

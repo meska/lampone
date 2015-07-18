@@ -30,8 +30,12 @@ from random import randrange
 from threading import Thread
 from guess_language import guess_language_name
 from Stemmer import algorithms as stemmer_languages
-
+import logging
 import re
+
+logging.basicConfig(level=logging.INFO)
+logging.getLogger(__name__)
+
 
 class Lampone(Bot):
     
@@ -39,7 +43,7 @@ class Lampone(Bot):
     badboys = {}
     groupmode = {}
     admins = []
-    reply_time = 3000
+    reply_time = 500
     
     def __init__(self, token,admins=""):
         super().__init__(token) # init classe principale
@@ -57,13 +61,13 @@ class Lampone(Bot):
                 logfile.write(msg.encode('utf8'))
                 logfile.write(b"\n")
         except Exception as e:
-            print(e)
+            logging.error(e)
 
     def learn_lines(self,message):
         # manual learn
         lines = message['text'].splitlines()[1:]
         for l in lines:
-            print("learning: %s" % l)
+            logging.info("learning: %s" % l)
             self.learn(l)
             self.log_learn(l)
 
@@ -76,7 +80,7 @@ class Lampone(Bot):
                 brain.set_stemmer(lang)
             brain.learn(msg)
         except Exception as e:
-            print("ERR - learn - %s" % e )
+            logging.error("ERR - learn - %s" % e )
          
         return lang
     
@@ -116,10 +120,10 @@ class Lampone(Bot):
                         
                     if ok:
                         lang = self.learn(l)
-                        print("learned: %s -- %s" % (lang,l))
+                        logging.info("learned: %s -- %s" % (lang,l))
                         lines.append(l.lower())
                 except Exception as e:
-                    print("ERR - autolearn - %s" % e )
+                    logging.error("ERR - autolearn - %s" % e )
                     
 
         with open("lampone_learn_cleaned.txt","wb") as logfile:
@@ -127,18 +131,18 @@ class Lampone(Bot):
                 try:
                     logfile.write((l + "\n").encode('utf8'))
                 except Exception as e:
-                    print("ERR - autolearn write - %s" % e )
+                    logging.error("ERR - autolearn write - %s" % e )
                 
         self.sendMessageThreaded(self.admins[0],"Autolearn Finished")
         self.listening.append(self.admins[0])
 
         
     def parsedocument(self,chat_id,message):
-        print("Documento ricevuto da %s" % message['from'] )
+        logging.info("Documento ricevuto da %s" % message['from'] )
 
     def parsemessage(self,chat_id,message):
-        print("Messaggio ricevuto da %s" % message['from'] )
-        print(message['text'])
+        logging.info("Messaggio ricevuto da %s" % message['from'] )
+        logging.info(message['text'])
         if self.stop:
             # stopping, ignore messages
             return
@@ -243,7 +247,7 @@ class Lampone(Bot):
             try:
                 self.autolearn()
             except Exception as e:
-                print("ERR - /autolearn - %s" % e )
+                logging.error("ERR - /autolearn - %s" % e )
                 
             return              
         
@@ -301,7 +305,7 @@ class Lampone(Bot):
                     rispondi = False
 
             try: 
-                print("Learn: %s, Rispondi: %s" % (learn,rispondi) )
+                logging.info("Learn: %s, Rispondi: %s" % (learn,rispondi) )
                 if learn:
                     self.log_learn(text) # log messages for retrain
                     lang = self.learn(text)
@@ -312,11 +316,11 @@ class Lampone(Bot):
                     # se proprio devo rispondere
                     self.action_typing(chat_id)
                     try:
-                        print("get reply l:%s text:%s" % (lang,text))
+                        logging.info("get reply l:%s text:%s" % (lang,text))
                         reply = self.reply(lang,text)
                     except Exception as e:
                         # manda un messaggio a caso se non gli piace ?
-                        print("ERR - rispondi - %s" % e )
+                        logging.error("ERR - rispondi - %s" % e )
                         reply = self.reply(lang,"")
 
                     # rispondi se e diversa, copiare no buono
@@ -333,7 +337,7 @@ class Lampone(Bot):
                         self.sendMessageThreaded(ll,"--> %s" % reply)
 
             except Exception as e:
-                print("ERR - try learn/rispondi - %s" % e )
+                logging.error("ERR - try learn/rispondi - %s" % e )
                 self.sendMessageThreaded(self.admins[0],"Brain error: %s\nbad text:\n%s" % (e,text))
             
     
@@ -354,7 +358,7 @@ if __name__ == '__main__':
     
 
     if cf['telegram']['token'] == "YOUR TOKEN HERE":
-        print("Token not defined, check config!")    
+        logging.info("Token not defined, check config!")    
     else:
 
         l = Lampone(
@@ -362,7 +366,7 @@ if __name__ == '__main__':
             admins=cf['telegram']['admins']
         )
         #l.clearWebHook()
-        print(l.get('getMe'))
+        logging.info(l.get('getMe'))
             
         for admin in l.admins:
             # notify admins when online
