@@ -123,16 +123,16 @@ class Lampone(Bot):
                         lang = self.learn(l)
                         print("learned: %s -- %s" % (lang,l))
                         lines.append(l.lower())
-                except:
-                    pass
+                except Exception as e:
+                    print("ERR - autolearn - %s" % e )
                     
 
         with open("lampone_learn_cleaned.txt","wb") as logfile:
             for l in lines:
                 try:
                     logfile.write((l + "\n").encode('utf8'))
-                except:
-                    pass
+                except Exception as e:
+                    print("ERR - autolearn write - %s" % e )
                 
         self.sendMessageThreaded(self.admins[0],"Autolearn Finished")
         self.listening.append(self.admins[0])
@@ -247,8 +247,9 @@ class Lampone(Bot):
         if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
             try:
                 self.autolearn()
-            except:
-                pass
+            except Exception as e:
+                print("ERR - /autolearn - %s" % e )
+                
             return              
         
         if message['text'] == "/listen" and message['from']['id'] in self.admins:
@@ -305,6 +306,7 @@ class Lampone(Bot):
                     rispondi = False
 
             try: 
+                print("Learn: %s, Rispondi: %s" % (learn,rispondi) )
                 if learn:
                     self.log_learn(text) # log messages for retrain
                     lang = self.learn(text)
@@ -318,6 +320,7 @@ class Lampone(Bot):
                         reply = self.reply(lang,text)
                     except Exception as e:
                         # manda un messaggio a caso se non gli piace ?
+                        print("ERR - rispondi - %s" % e )
                         reply = self.reply(lang,"")
 
                     # rispondi se e diversa, copiare no buono
@@ -334,6 +337,7 @@ class Lampone(Bot):
                         self.sendMessageThreaded(ll,"--> %s" % reply)
 
             except Exception as e:
+                print("ERR - try learn/rispondi - %s" % e )
                 self.sendMessageThreaded(self.admins[0],"Brain error: %s\nbad text:\n%s" % (e,text))
             
     
