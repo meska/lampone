@@ -39,7 +39,6 @@ class Lampone(Bot):
     badboys = {}
     groupmode = {}
     admins = []
-    brains = {}
     reply_time = 3000
     
     def __init__(self, token,admins=""):
@@ -71,27 +70,23 @@ class Lampone(Bot):
     def learn(self,msg):
         # learn message
         lang = guess_language_name(msg).lower()
-        
-        if not lang in self.brains:
-            self.brains[lang] = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
-            if lang in self.languages:
-                self.brains[lang].set_stemmer(lang)
-
         try:
-            self.brains[lang].learn(msg)
-        except:
-            pass
+            brain = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
+            if lang in self.languages:
+                brain.set_stemmer(lang)
+            brain.learn(msg)
+        except Exception as e:
+            print("ERR - learn - %s" % e )
          
         return lang
     
     
     def reply(self,lang,msg):
         # reply message
-        if not lang in self.brains:
-            self.brains[lang] = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
-            if lang in self.languages:
-                self.brains[lang].set_stemmer(lang)
-        return self.brains[lang].reply(msg,loop_ms=self.reply_time)
+        brain = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
+        if lang in self.languages:
+            brain.set_stemmer(lang)
+        return brain.reply(msg,loop_ms=self.reply_time)
     
     def sendMessageThreaded(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
         Thread(target=self.sendMessage,kwargs={
