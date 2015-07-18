@@ -226,7 +226,7 @@ class Lampone(Bot):
             return        
         
         if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
-            self.autolearn(message['from']['id'])
+            self.autolearn()
             return              
         
         if message['text'] == "/listen" and message['from']['id'] in self.admins:
