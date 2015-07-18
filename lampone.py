@@ -300,7 +300,7 @@ class Lampone(Bot):
                     self.log_learn(text) # log messages for retrain
                     lang = self.learn(text)
                 else:
-                    lang = guess_language_name(text)
+                    lang = guess_language_name(text).lower()
              
                 if rispondi:
                     # se proprio devo rispondere
