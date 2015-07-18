@@ -15,12 +15,13 @@
 """
 import os,sys
 from wrapper import Bot
-from megahal import MegaHAL
+from cobe.brain import Brain
 from threading import Timer
 from shutil import copy2
 from datetime import datetime,timedelta
 from configparser import ConfigParser
 from random import randrange
+from threading import Thread
 import re
 
 class Lampone(Bot):
@@ -29,24 +30,20 @@ class Lampone(Bot):
     badboys = {}
     groupmode = {}
     admins = []
-
     
     def __init__(self, token,admins=""):
         super().__init__(token) # init classe principale
 
         self.admins = [ int(x) for x in admins.split(",") ]
-        self.brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
+
+        brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
+        need_learn = True if not os.path.exists(brainfile_name) else False
+
+        self.brain = Brain(brainfile_name)
         
-        # delete old brain on restart
-        if os.path.exists(self.brainfile_name):
-            os.unlink(self.brainfile_name)
+        if need_learn:
+            self.autolearn()
            
-        if os.path.exists(os.path.join(os.path.split(__file__)[0],"lampone.brain.db")):
-            os.unlink(os.path.join(os.path.split(__file__)[0],"lampone.brain.db"))
-            
-        self.megahal = MegaHAL(brainfile=self.brainfile_name)
-        self.autolearn()
-            
 
     def log_learn(self,msg):
         # TODO: loggare solo quelle di un certo peso
@@ -62,13 +59,22 @@ class Lampone(Bot):
         lines = message['text'].splitlines()[1:]
         for l in lines:
             print("learning: %s" % l)
-            self.megahal.learn(l)
+            self.brain.learn(l)
             self.log_learn(l)
-        self.megahal.sync()
+
+    def sendMessageThreaded(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
+        Thread(target=self.sendMessage,kwargs={
+            'chat_id':chat_id,
+            'text':text,
+            'disable_web_page_preview':disable_web_page_preview,
+            'reply_to_message_id':reply_to_message_id,
+            'reply_markup':reply_markup
+        }).start()
 
     def autolearn(self):
         # learns from previous chats
-        self.sendMessage(self.admins[0],"Autolearn Start")
+        
+        self.sendMessageThreaded(self.admins[0],"Autolearn Start")
         lines = []
         with open("lampone_learn.txt","rb") as logfile:
             for l in logfile.readlines():
@@ -84,7 +90,7 @@ class Lampone(Bot):
                 if ok:
                     print("learning: %s" % l)
                     try:
-                        self.megahal.learn(l)
+                        self.brain.learn(l)
                         lines.append(l.lower())
                     except:
                         pass
@@ -94,8 +100,7 @@ class Lampone(Bot):
             for l in lines:
                 logfile.write((l + "\n").encode('utf8'))
                 
-        self.megahal.sync()
-        self.sendMessage(self.admins[0],"Autolearn Finished")
+        self.sendMessageThreaded(self.admins[0],"Autolearn Finished")
         self.listening.append(self.admins[0])
 
         
@@ -124,12 +129,10 @@ class Lampone(Bot):
             to reload automatically use a cron like this:
             */1 * * * * [ `ps aux | grep python3 | grep lampone | grep -v grep | wc -l` -eq 0 ] && /usr/bin/python3 /home/pi/lampone/lampone.py  > /dev/null 2>&1
             """
-            self.sendMessage(chat_id,"Updating...")
+            self.sendMessageThreaded(chat_id,"Updating...")
             res = os.popen("cd %s && git fetch --all && git reset --hard origin" % os.path.join(os.path.split(__file__)[0])).read()
-            self.sendMessage(chat_id,res)
-            self.sendMessage(chat_id,"Restarting...")
-            self.megahal.sync()
-            self.megahal._MegaHAL__brain.db.close()            
+            self.sendMessageThreaded(chat_id,res)
+            self.sendMessageThreaded(chat_id,"Restarting...")
             self.stop = True
             return        
         
@@ -143,83 +146,76 @@ class Lampone(Bot):
                     count = int(param)
                     if count > 100:
                         count = 100
-            self.sendMessage(chat_id,"Learning %s fortunes"%count)
+            self.sendMessageThreaded(chat_id,"Learning %s fortunes"%count)
             for x in range(count):
                 txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
                 if txt:
-                    self.megahal.learn(txt)
-            self.sendMessage(chat_id,"Done")
+                    self.brain.learn(txt)
+            self.sendMessageThreaded(chat_id,"Done")
             return        
         
         if message['text'] == "/start":
-            self.sendMessage(chat_id,"Welcome to Lampone Bot")
+            self.sendMessageThreaded(chat_id,"Welcome to Lampone Bot")
             return
 
         if message['text'] == "/groupmode":
             if chat_id > 0:
-                self.sendMessage(chat_id,"This is not a group.")
+                self.sendMessageThreaded(chat_id,"This is not a group.")
             else:
-                self.sendMessage(chat_id,"Select Group Mode:",reply_markup={'keyboard':[['/g1 Respond all messages'],['/g2 Respond some messages'],['/g3 Respond only for Lampone'],]})
+                self.sendMessageThreaded(chat_id,"Select Group Mode:",reply_markup={'keyboard':[['/g1 Respond all messages'],['/g2 Respond some messages'],['/g3 Respond only for Lampone'],]})
             return
         
         if message['text'].startswith("/g1"):
             if chat_id > 0:
-                self.sendMessage(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
+                self.sendMessageThreaded(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
             else:
                 self.groupmode[chat_id] = 1
-                self.sendMessage(chat_id,"Groupmode 1 enabled",reply_markup={'hide_keyboard':True})
+                self.sendMessageThreaded(chat_id,"Groupmode 1 enabled",reply_markup={'hide_keyboard':True})
             return
         
         if message['text'].startswith("/g2"):
             if chat_id > 0:
-                self.sendMessage(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
+                self.sendMessageThreaded(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
             else:
                 self.groupmode[chat_id] = 2
-                self.sendMessage(chat_id,"Groupmode 2 enabled",reply_markup={'hide_keyboard':True})
+                self.sendMessageThreaded(chat_id,"Groupmode 2 enabled",reply_markup={'hide_keyboard':True})
             return
         
         if message['text'].startswith("/g3"):
             if chat_id > 0:
-                self.sendMessage(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
+                self.sendMessageThreaded(chat_id,"This is not a group.",reply_markup={'hide_keyboard':True})
             else:
                 self.groupmode[chat_id] = 3
-                self.sendMessage(chat_id,"Groupmode 3 enabled",reply_markup={'hide_keyboard':True})
+                self.sendMessageThreaded(chat_id,"Groupmode 3 enabled",reply_markup={'hide_keyboard':True})
             return        
         
         if message['text'] == "/help":
-            self.sendMessage(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond\nTry /groupmode for limit group interaction")
+            self.sendMessageThreaded(chat_id,"This is a simple AI bot, just talk to him or invite to your group and he will learn and respond\nTry /groupmode for limit group interaction")
             return        
         
         if message['text'] == "/stop":
-            self.sendMessage(chat_id,"Command not needed, just close the chat :)")
+            self.sendMessageThreaded(chat_id,"Command not needed, just close the chat :)")
             return        
         
-        if message['text'] == "/s" and message['from']['id'] in self.admins:
-            self.megahal.sync()
-            self.megahal._MegaHAL__brain.db.close()
-            self.megahal = MegaHAL(brainfile=self.brainfile_name)
-            self.sendMessage(chat_id,"Sync db")
-            return       
-        
-        if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
-            self.autolearn()
-            return              
+        #if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
+            #self.autolearn()
+            #return              
         
         if message['text'] == "/listen" and message['from']['id'] in self.admins:
-            self.sendMessage(chat_id,"Listening enabled, stop with /stoplisten")
+            self.sendMessageThreaded(chat_id,"Listening enabled, stop with /stoplisten")
             if not chat_id in self.listening:
                 self.listening.append(chat_id)
             return        
         
         if message['text'] == "/stoplisten" and message['from']['id'] in self.admins:
-            self.sendMessage(chat_id,"Listening stopped")
+            self.sendMessageThreaded(chat_id,"Listening stopped")
             if chat_id in self.listening:
                 self.listening.pop(self.listening.index(chat_id))
             return                
         
         if not message['text'].startswith('/'):
             for ll in self.listening:
-                self.sendMessage(ll,"<-- %s" % message['text'])
+                self.sendMessageThreaded(ll,"<-- %s" % message['text'])
 
             delta = delta = datetime.now() - datetime.fromtimestamp(message['date'])
             learn = True
@@ -235,9 +231,9 @@ class Lampone(Bot):
             
             if 'http' in text.lower(): learn = False # don't learn urls
             if re.match('.*[\w\d]+\.\w{2,4}',text) : learn = False # try don't learn hostnames
-            if len(text.split()) < 3: learn = False # don't learn shorter phrases
+            if len(text.split()) < 2: learn = False # don't learn shorter phrases
             if re.match('.*@\w+',text): learn = False # don't learn usernames
-            if len(text.split()) > 50: learn = False # don't learn too long messages
+            if len(text.split()) > 100: learn = False # don't learn too long messages
 
             
             if chat_id in self.groupmode:
@@ -261,23 +257,32 @@ class Lampone(Bot):
             try: 
                 if learn:
                     self.log_learn(text) # log messages for retrain
-                    self.megahal.learn(text)
+                    self.brain.learn(text)
              
                 if rispondi:
+                    # se proprio devo rispondere
                     self.action_typing(chat_id)
-                    reply = self.megahal.get_reply_nolearn(text)
+                    try:
+                        reply = self.brain.reply(text)
+                    except Exception as e:
+                        # manda un messaggio a caso se non gli piace ?
+                        reply = self.brain.reply("")
 
                     # rispondi se e diversa, copiare no buono
-                    if not reply.lower().strip('.') == text.lower():
-                        self.sendMessage(chat_id,reply)
-                        for ll in self.listening:
-                            self.sendMessage(ll,"--> %s" % reply)
+                    if not reply.lower().strip('.').strip('!').strip('?').strip() == text.lower().strip('.').strip('!').strip('?').strip():
+                        self.sendMessageThreaded(chat_id,reply)
+                    else:
+                        # manda un messaggio a caso invece di ripetere
+                        reply = self.brain.reply("")
+                        if reply.strip():
+                            self.sendMessageThreaded(chat_id,reply)
+                        
 
+                    for ll in self.listening:
+                        self.sendMessageThreaded(ll,"--> %s" % reply)
 
-        
             except Exception as e:
-                pass
-                #self.sendMessage(self.admins[0],"Learning error: %s\nbad text:\n%s" % (e,text))
+                self.sendMessageThreaded(self.admins[0],"Brain error: %s\nbad text:\n%s" % (e,text))
             
     
 
@@ -310,6 +315,6 @@ if __name__ == '__main__':
         for admin in l.admins:
             # notify admins when online
             l.action_typing(admin)
-            l.sendMessage(admin,"Lampone is Online!")
+            l.sendMessageThreaded(admin,"Lampone is Online!")
             
         l.getUpdates()
