@@ -11,6 +11,12 @@
   stop - stops ?
   groupmode - Set groupchat mode
   
+  TODO: sarebbe utile fare database multipli in base alla lingua parlata:  https://pypi.python.org/pypi/guess_language-spirit/0.5.1
+  una volta decisa la lingua va impostato lo stemmer corretto
+  http://pythonhosted.org/pyenchant/
+  
+  su mac ricordarsi di installare tutti i dizionari: brew install aspell --with-all-langs
+  
   
 """
 import os,sys
@@ -22,6 +28,9 @@ from datetime import datetime,timedelta
 from configparser import ConfigParser
 from random import randrange
 from threading import Thread
+from guess_language import guess_language_name
+from Stemmer import algorithms as stemmer_languages
+
 import re
 
 class Lampone(Bot):
@@ -30,19 +39,15 @@ class Lampone(Bot):
     badboys = {}
     groupmode = {}
     admins = []
+    brains = {}
     
     def __init__(self, token,admins=""):
         super().__init__(token) # init classe principale
 
         self.admins = [ int(x) for x in admins.split(",") ]
-
-        brainfile_name = os.path.join(os.path.split(__file__)[0],"lampone.brain")
-        need_learn = True if not os.path.exists(brainfile_name) else False
-
-        self.brain = Brain(brainfile_name)
-        
-        if need_learn:
-            self.autolearn()
+        self.languages = stemmer_languages()
+        if not os.path.exists(os.path.join(os.path.split(__file__)[0],'brains')):
+            os.mkdir(os.path.join(os.path.split(__file__)[0],'brains'))
            
 
     def log_learn(self,msg):
@@ -54,14 +59,39 @@ class Lampone(Bot):
         except Exception as e:
             print(e)
 
-    def learn(self,message):
+    def learn_lines(self,message):
         # manual learn
         lines = message['text'].splitlines()[1:]
         for l in lines:
             print("learning: %s" % l)
-            self.brain.learn(l)
+            self.learn(l)
             self.log_learn(l)
 
+    def learn(self,msg):
+        # learn message
+        lang = guess_language_name(msg).lower()
+        
+        if not lang in self.brains:
+            self.brains[lang] = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
+            if lang in self.languages:
+                self.brains[lang].set_stemmer(lang)
+
+        try:
+            self.brains[lang].learn(msg)
+        except:
+            pass
+         
+        return lang
+    
+    
+    def reply(self,lang,msg):
+        # reply message
+        if not lang in self.brains:
+            self.brains[lang] = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
+            if lang in self.languages:
+                self.brains[lang].set_stemmer(lang)
+        return self.brains[lang].reply(msg)
+    
     def sendMessageThreaded(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
         Thread(target=self.sendMessage,kwargs={
             'chat_id':chat_id,
@@ -88,12 +118,9 @@ class Lampone(Bot):
                 if '@' in l: ok = False
                     
                 if ok:
-                    print("learning: %s" % l)
-                    try:
-                        self.brain.learn(l)
-                        lines.append(l.lower())
-                    except:
-                        pass
+                    lang = self.learn(l)
+                    print("learned: %s -- %s" % (lang,l))
+                    lines.append(l.lower())
                     
 
         with open("lampone_learn_cleaned.txt","wb") as logfile:
@@ -120,7 +147,7 @@ class Lampone(Bot):
         #    self.backupBrain()
 
         if message['text'].startswith('/learn') and message['from']['id'] in self.admins:
-            self.learn(message)
+            self.learn_lines(message)
             return
         
         if message['text'].startswith('/update') and message['from']['id'] in self.admins:
@@ -150,7 +177,7 @@ class Lampone(Bot):
             for x in range(count):
                 txt = os.popen('fortune | grep -v "\-\-\s.*" | grep -v ".*:$" | grep -v ".*http://"').read()
                 if txt:
-                    self.brain.learn(txt)
+                    self.learn(txt)
             self.sendMessageThreaded(chat_id,"Done")
             return        
         
@@ -198,9 +225,9 @@ class Lampone(Bot):
             self.sendMessageThreaded(chat_id,"Command not needed, just close the chat :)")
             return        
         
-        #if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
-            #self.autolearn()
-            #return              
+        if message['text'] == "/autolearn" and message['from']['id'] in self.admins:
+            self.autolearn(message['from']['id'])
+            return              
         
         if message['text'] == "/listen" and message['from']['id'] in self.admins:
             self.sendMessageThreaded(chat_id,"Listening enabled, stop with /stoplisten")
@@ -258,23 +285,25 @@ class Lampone(Bot):
             try: 
                 if learn:
                     self.log_learn(text) # log messages for retrain
-                    self.brain.learn(text)
+                    lang = self.learn(text)
+                else:
+                    lang = guess_language_name(text)
              
                 if rispondi:
                     # se proprio devo rispondere
                     self.action_typing(chat_id)
                     try:
-                        reply = self.brain.reply(text)
+                        reply = self.reply(lang,text)
                     except Exception as e:
                         # manda un messaggio a caso se non gli piace ?
-                        reply = self.brain.reply("")
+                        reply = self.reply(lang,"")
 
                     # rispondi se e diversa, copiare no buono
                     if not reply.lower().strip('.').strip('!').strip('?').strip() == text.lower().strip('.').strip('!').strip('?').strip():
                         self.sendMessageThreaded(chat_id,reply)
                     else:
                         # manda un messaggio a caso invece di ripetere
-                        reply = self.brain.reply("")
+                        reply = self.reply(lang,"")
                         if reply.strip():
                             self.sendMessageThreaded(chat_id,reply)
                         

@@ -57,5 +57,9 @@ docs/_build/
 target/
 *.wpr
 *.wpu
-*.brain
-*.brain.*
+.DS_Store
+lampone.conf
+learnme.txt
+lampone_learn.txt
+lampone_learn_cleaned.txt
+brains/
