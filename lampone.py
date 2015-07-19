@@ -44,12 +44,15 @@ class Lampone(Bot):
     groupmode = {}
     admins = []
     reply_time = 500
+    brains = {}
+    multibrain = False # works better with a single one
     
     def __init__(self, token,admins=""):
         super().__init__(token) # init classe principale
-
+        
         self.admins = [ int(x) for x in admins.split(",") ]
         self.languages = stemmer_languages()
+
         if not os.path.exists(os.path.join(os.path.split(__file__)[0],'brains')):
             os.mkdir(os.path.join(os.path.split(__file__)[0],'brains'))
            
@@ -73,24 +76,37 @@ class Lampone(Bot):
 
     def learn(self,msg):
         # learn message
-        lang = guess_language_name(msg).lower()
+        if self.multibrain:
+            lang = guess_language_name(msg).lower()
+        else:
+            lang = 'multi'
+
         try:
-            brain = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
-            if lang in self.languages:
-                brain.set_stemmer(lang)
-            brain.learn(msg)
+            if not lang in self.brains:
+                self.brains[lang] =  Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
+                if self.brains[lang]  in self.languages:
+                    brain.set_stemmer(lang)
+            self.brains[lang].learn(msg)
         except Exception as e:
             logging.error("ERR - learn - %s" % e )
-         
+             
         return lang
     
     
     def reply(self,lang,msg):
         # reply message
-        brain = Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
-        if lang in self.languages:
-            brain.set_stemmer(lang)
-        return brain.reply(msg,loop_ms=self.reply_time)
+        
+        if self.multibrain:
+            lang = guess_language_name(msg).lower()
+        else:
+            lang = 'multi'
+
+        if not lang in self.brains:
+            self.brains[lang] =  Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
+            if lang in self.languages:
+                self.brains[lang] .set_stemmer(lang)
+            
+        return self.brains[lang] .reply(msg,loop_ms=self.reply_time)
     
     def sendMessageThreaded(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
         Thread(target=self.sendMessage,kwargs={
@@ -310,7 +326,10 @@ class Lampone(Bot):
                     self.log_learn(text) # log messages for retrain
                     lang = self.learn(text)
                 else:
-                    lang = guess_language_name(text).lower()
+                    if self.multibrain:
+                        lang = guess_language_name(text).lower()
+                    else:
+                        lang = 'multi'
              
                 if rispondi:
                     # se proprio devo rispondere
@@ -353,6 +372,8 @@ if __name__ == '__main__':
         cf.add_section("telegram")
         cf.set("telegram","token","YOUR TOKEN HERE")
         cf.set("telegram","admins","12345,12345,1232")
+        cf.add_section("brain")
+        cf.set("brain","multi",True)
         with open(os.path.join(os.path.split(__file__)[0],"lampone.conf"),"w") as cf_file:
             cf.write(cf_file)
     
