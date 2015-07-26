@@ -54,7 +54,7 @@ class Lampone(Bot):
     def __init__(self, token,admins="",webhook_url=""):
         super().__init__(token) # init classe principale
         if webhook_url:
-            self.setWebhook('https://home.meskatech.com/cherrybot/webhook')
+            self.setWebhook(webhook_url)
         else:
             self.clearWebHook()
         self.admins = [ int(x) for x in admins.split(",") ]
@@ -411,14 +411,13 @@ if __name__ == '__main__':
     if cf['telegram']['token'] == "YOUR TOKEN HERE":
         logging.info("Token not defined, check config!")    
     else:
-        cherrypy.config.update({'server.socket_host': cf['cherry']['listen_ip'],'server.socket_port': int(cf['cherry']['listen_port'])})
-        cherrypy.quickstart(Lampone(cf['telegram']['token'],admins=cf['telegram']['admins'],webhook_url=cf['telegram']['webhook_url']),cf['cherry']['script_name'])
+        #cherrypy.config.update({'server.socket_host': cf['cherry']['listen_ip'],'server.socket_port': int(cf['cherry']['listen_port'])})
+        #cherrypy.quickstart(Lampone(cf['telegram']['token'],admins=cf['telegram']['admins'],webhook_url=cf['telegram']['webhook_url']),cf['cherry']['script_name'])
 
-        #l = Lampone(
-        #    cf['telegram']['token'],
-        #    admins=cf['telegram']['admins']
-        #)
-        #l.clearWebHook()
+        l = Lampone(
+            cf['telegram']['token'],
+            admins=cf['telegram']['admins']
+        )
         logging.info(l.get('getMe'))
             
         for admin in l.admins:
