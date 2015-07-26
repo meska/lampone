@@ -386,7 +386,7 @@ if __name__ == '__main__':
             cf['telegram']['token'],
             admins=cf['telegram']['admins']
         )
-        #l.clearWebHook()
+        l.clearWebHook()
         logging.info(l.get('getMe'))
             
         for admin in l.admins:
