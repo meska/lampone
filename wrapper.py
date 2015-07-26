@@ -23,9 +23,8 @@ class Bot:
         logging.info("Telegram Bot Starting")
         self.token = token
   
-    def setWebhook(self):
-        whurl = "%s" % (os.getenv('TELEGRAM_WEBHOOK_URL'))
-        r = self.post('setWebhook',{'url':whurl.replace('http:','https:')})
+    def setWebhook(self,whurl):
+        r = self.post('setWebhook',{'url':whurl})
         logging.info("Telegram WebHook Setup: %s" % r)
             
     def clearWebHook(self):

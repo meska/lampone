@@ -32,9 +32,11 @@ from guess_language import guess_language_name
 from Stemmer import algorithms as stemmer_languages
 import logging
 import re
+import cherrypy
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger(__name__)
+
 
 
 class Lampone(Bot):
@@ -47,15 +49,33 @@ class Lampone(Bot):
     brains = {}
     multibrain = False # works better with a single one
     
-    def __init__(self, token,admins=""):
+
+    
+    def __init__(self, token,admins="",webhook_url=""):
         super().__init__(token) # init classe principale
-        
+        if webhook_url:
+            self.setWebhook('https://home.meskatech.com/cherrybot/webhook')
+        else:
+            self.clearWebHook()
         self.admins = [ int(x) for x in admins.split(",") ]
         self.languages = stemmer_languages()
 
         if not os.path.exists(os.path.join(os.path.split(__file__)[0],'brains')):
             os.mkdir(os.path.join(os.path.split(__file__)[0],'brains'))
            
+
+    @cherrypy.expose
+    @cherrypy.tools.json_in()
+    def webhook(self):
+        r = cherrypy.request.json
+        m = r['message']
+        cid = m['chat']['id']
+        if 'text' in m:
+            self.parsemessage(cid,m)
+        if 'document' in m:
+            self.parsedocument(cid,m)                    
+    webhook.exposed = True
+    
 
     def log_learn(self,msg):
         # TODO: loggare solo quelle di un certo peso
@@ -372,8 +392,18 @@ if __name__ == '__main__':
         cf.add_section("telegram")
         cf.set("telegram","token","YOUR TOKEN HERE")
         cf.set("telegram","admins","12345,12345,1232")
+        cf.set("telegram","webhook_url",'https://www.example.com/lampone/webhook')
         cf.add_section("brain")
         cf.set("brain","multi",True)
+
+        cf.add_section("cherry")
+        cf.set("cherry","listen_ip",'0.0.0.0')
+        cf.set("cherry","listen_port",8080)
+        cf.set("cherry","script_name",'/lampone/')
+        
+        
+        
+
         with open(os.path.join(os.path.split(__file__)[0],"lampone.conf"),"w") as cf_file:
             cf.write(cf_file)
     
@@ -381,12 +411,14 @@ if __name__ == '__main__':
     if cf['telegram']['token'] == "YOUR TOKEN HERE":
         logging.info("Token not defined, check config!")    
     else:
+        cherrypy.config.update({'server.socket_host': cf['cherry']['listen_ip'],'server.socket_port': int(cf['cherry']['listen_port'])})
+        cherrypy.quickstart(Lampone(cf['telegram']['token'],admins=cf['telegram']['admins'],webhook_url=cf['telegram']['webhook_url']),cf['cherry']['script_name'])
 
-        l = Lampone(
-            cf['telegram']['token'],
-            admins=cf['telegram']['admins']
-        )
-        l.clearWebHook()
+        #l = Lampone(
+        #    cf['telegram']['token'],
+        #    admins=cf['telegram']['admins']
+        #)
+        #l.clearWebHook()
         logging.info(l.get('getMe'))
             
         for admin in l.admins:
@@ -394,4 +426,4 @@ if __name__ == '__main__':
             l.action_typing(admin)
             l.sendMessageThreaded(admin,"Lampone is Online!")
             
-        l.getUpdates()
+        #l.getUpdates()
