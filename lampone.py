@@ -425,4 +425,4 @@ if __name__ == '__main__':
             l.action_typing(admin)
             l.sendMessageThreaded(admin,"Lampone is Online!")
             
-        #l.getUpdates()
+        l.getUpdates()
