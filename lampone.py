@@ -34,8 +34,8 @@ import logging
 import re
 import cherrypy
 
-logging.basicConfig(level=logging.INFO)
-logging.getLogger(__name__)
+logger = logging.getLogger('lamponebot')
+logger.setLevel(logging.INFO)
 
 
 
@@ -88,13 +88,13 @@ class Lampone(Bot):
                 logfile.write(msg.encode('utf8'))
                 logfile.write(b"\n")
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
 
     def learn_lines(self,message):
         # manual learn
         lines = message['text'].splitlines()[1:]
         for l in lines:
-            logging.info("learning: %s" % l)
+            logger.info("learning: %s" % l)
             self.learn(l)
             self.log_learn(l)
 
@@ -112,7 +112,7 @@ class Lampone(Bot):
                     brain.set_stemmer(lang)
             self.brains[lang].learn(msg)
         except Exception as e:
-            logging.error("ERR - learn - %s" % e )
+            logger.error("ERR - learn - %s" % e )
              
         return lang
     
@@ -168,10 +168,10 @@ class Lampone(Bot):
                         
                     if ok:
                         lang = self.learn(l)
-                        logging.info("learned: %s -- %s" % (lang,l))
+                        logger.info("learned: %s -- %s" % (lang,l))
                         lines.append(l.lower())
                 except Exception as e:
-                    logging.error("ERR - autolearn - %s" % e )
+                    logger.error("ERR - autolearn - %s" % e )
                     
 
         with open("lampone_learn_cleaned.txt","wb") as logfile:
@@ -179,32 +179,34 @@ class Lampone(Bot):
                 try:
                     logfile.write((l + "\n").encode('utf8'))
                 except Exception as e:
-                    logging.error("ERR - autolearn write - %s" % e )
+                    logger.error("ERR - autolearn write - %s" % e )
                 
         self.sendMessageThreaded(self.admins[0],"Autolearn Finished")
         self.listening.append(self.admins[0])
 
         
     def parsedocument(self,chat_id,message):
-        logging.info("Documento ricevuto da %s" % message['from'] )
+        logger.info("Documento ricevuto da %s" % message['from'] )
         if str(message['from']['id']) in self.blacklist:
             return         
     
     def parsepicture(self,chat_id,message):
-        logging.info("Immagine ricevuta da %s" % message['from'] )
+        logger.info("Immagine ricevuta da %s" % message['from'] )
         if str(message['from']['id']) in self.blacklist:
             return         
         self.forwardMessageThreaded(self.admins[0], message['from']['id'], message['message_id']) # too
 
     def parsemessage(self,chat_id,message):
-        logging.info("Messaggio ricevuto da %s" % message['from'] )
-        logging.info(message['text'])
+        logger.info("Messaggio ricevuto da %s" % message['from'] )
+        logger.info(message['text'])
         if self.stop:
             # stopping, ignore messages
             return
         
         if str(message['from']['id']) in self.blacklist:
             return 
+        
+        logger.info(guess_language_name(message['text']))
         #if self.lastbackup != datetime.now().hour:
         #    self.lastbackup = datetime.now().hour
         #    self.backupBrain()
@@ -304,7 +306,7 @@ class Lampone(Bot):
             try:
                 self.autolearn()
             except Exception as e:
-                logging.error("ERR - /autolearn - %s" % e )
+                logger.error("ERR - /autolearn - %s" % e )
                 
             return              
         
@@ -329,6 +331,20 @@ class Lampone(Bot):
                     self.sendMessageThreaded(chat_id,"User %s blacklisted" % ban_id)
                     with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'w') as fp:
                         fp.writelines([ "%s\r\n" % x for x in self.blacklist ])
+            else:
+                if 'reply_to_message' in message:
+                    match = re.match('.*\[(\d+)\].*',message['reply_to_message']['text'])
+                    if match:
+                        ban_id = match.groups(0)[0]
+                        if not ban_id in self.blacklist and not int(ban_id) in self.admins:
+                            self.blacklist.append(ban_id)
+                            self.sendMessageThreaded(chat_id,"User %s blacklisted" % ban_id)
+                            with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'w') as fp:
+                                fp.writelines([ "%s\r\n" % x for x in self.blacklist ])                        
+                        
+                    
+                # check for number in forwarded message
+                
             return
 
         if message['text'].startswith("/unban") and message['from']['id'] in self.admins:
@@ -385,7 +401,7 @@ class Lampone(Bot):
                     rispondi = False
 
             try: 
-                logging.info("Learn: %s, Rispondi: %s" % (learn,rispondi) )
+                logger.info("Learn: %s, Rispondi: %s" % (learn,rispondi) )
                 if learn:
                     self.log_learn(text) # log messages for retrain
                     lang = self.learn(text)
@@ -399,11 +415,11 @@ class Lampone(Bot):
                     # se proprio devo rispondere
                     self.action_typing(chat_id)
                     try:
-                        logging.info("get reply l:%s text:%s" % (lang,text))
+                        logger.info("get reply l:%s text:%s" % (lang,text))
                         reply = self.reply(lang,text)
                     except Exception as e:
                         # manda un messaggio a caso se non gli piace ?
-                        logging.error("ERR - rispondi - %s" % e )
+                        logger.error("ERR - rispondi - %s" % e )
                         reply = self.reply(lang,"")
 
                     # rispondi se e diversa, copiare no buono
@@ -420,7 +436,7 @@ class Lampone(Bot):
                         self.sendMessageThreaded(ll,"--> [%s] %s" % (message['from']['id'],reply))
 
             except Exception as e:
-                logging.error("ERR - try learn/rispondi - %s" % e )
+                logger.error("ERR - try learn/rispondi - %s" % e )
                 self.sendMessageThreaded(self.admins[0],"Brain error: %s\nbad text:\n%s" % (e,text))
             
     
@@ -453,7 +469,7 @@ if __name__ == '__main__':
     
 
     if cf['telegram']['token'] == "YOUR TOKEN HERE":
-        logging.info("Token not defined, check config!")    
+        logger.info("Token not defined, check config!")    
     else:
         #webhooks not supported for now
         #cherrypy.config.update({'server.socket_host': cf['cherry']['listen_ip'],'server.socket_port': int(cf['cherry']['listen_port'])})
@@ -463,7 +479,7 @@ if __name__ == '__main__':
             cf['telegram']['token'],
             admins=cf['telegram']['admins']
         )
-        logging.info(l.get('getMe'))
+        logger.info(l.get('getMe'))
             
         for admin in l.admins:
             # notify admins when online
