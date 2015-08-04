@@ -77,6 +77,13 @@ class Bot:
         self.post('sendChatAction',{'chat_id':chat_id,'action':'upload_photo'})
         
   
+    def forwardMessage(self,chat_id,from_chat_id,message_id):
+        r = self.post('forwardMessage',{
+            'chat_id':chat_id,
+            'from_chat_id':from_chat_id,
+            'message_id':message_id
+        })
+        
     def sendMessage(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
         r = self.post('sendMessage',{
             'chat_id':chat_id,
@@ -84,7 +91,7 @@ class Bot:
             'disable_web_page_preview':disable_web_page_preview,
             'reply_to_message_id':reply_to_message_id,
             'reply_markup':json.dumps(reply_markup)
-        })
+        })        
         #TODO: check result
 
         
@@ -101,7 +108,11 @@ class Bot:
     def parsemessage(self,chat_id,message):
         # parse message here
         pass
-
+    
+    def parsepicture(self,chat_id,message):
+        # parse message here
+        pass
+    
     def parsedocument(self,chat_id,message):
         # parse document here but no api from telegram yet
         pass    
@@ -131,6 +142,8 @@ class Bot:
                     cid = m['chat']['id']
                     if 'text' in m:
                         self.parsemessage(cid,m)
+                    if 'photo' in m:
+                        self.parsepicture(cid,m)
                     if 'document' in m:
                         self.parsedocument(cid,m)                    
                     self.offset = r['update_id'] + 1

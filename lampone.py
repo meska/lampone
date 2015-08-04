@@ -48,7 +48,7 @@ class Lampone(Bot):
     reply_time = 500
     brains = {}
     multibrain = False # works better with a single one
-    
+    blacklist = []
 
     
     def __init__(self, token,admins="",webhook_url=""):
@@ -62,6 +62,10 @@ class Lampone(Bot):
 
         if not os.path.exists(os.path.join(os.path.split(__file__)[0],'brains')):
             os.mkdir(os.path.join(os.path.split(__file__)[0],'brains'))
+           
+        if os.path.exists(os.path.join(os.path.split(__file__)[0],'blacklist.txt')):
+            with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'r') as fp:
+                self.blacklist = [ x.strip() for x in fp.readlines() ]
            
 
     @cherrypy.expose
@@ -136,7 +140,14 @@ class Lampone(Bot):
             'reply_to_message_id':reply_to_message_id,
             'reply_markup':reply_markup
         }).start()
-
+    
+    def forwardMessageThreaded(self,chat_id,from_chat_id,message_id):
+        Thread(target=self.forwardMessage,kwargs={
+            'chat_id':chat_id,
+            'from_chat_id':from_chat_id,
+            'message_id':message_id
+        }).start()
+        
     def autolearn(self):
         # learns from previous chats
         
@@ -175,6 +186,14 @@ class Lampone(Bot):
         
     def parsedocument(self,chat_id,message):
         logging.info("Documento ricevuto da %s" % message['from'] )
+        if str(message['from']['id']) in self.blacklist:
+            return         
+    
+    def parsepicture(self,chat_id,message):
+        logging.info("Immagine ricevuta da %s" % message['from'] )
+        if str(message['from']['id']) in self.blacklist:
+            return         
+        self.forwardMessageThreaded(self.admins[0], message['from']['id'], message['message_id']) # too
 
     def parsemessage(self,chat_id,message):
         logging.info("Messaggio ricevuto da %s" % message['from'] )
@@ -183,7 +202,8 @@ class Lampone(Bot):
             # stopping, ignore messages
             return
         
-
+        if str(message['from']['id']) in self.blacklist:
+            return 
         #if self.lastbackup != datetime.now().hour:
         #    self.lastbackup = datetime.now().hour
         #    self.backupBrain()
@@ -299,9 +319,32 @@ class Lampone(Bot):
                 self.listening.pop(self.listening.index(chat_id))
             return                
         
+        if message['text'].startswith("/ban") and message['from']['id'] in self.admins:
+            # blacklist user
+            if len(message['text'].split())==2:
+                ban_id = message['text'].split()[1]
+                if not ban_id in self.blacklist and not int(ban_id) in self.admins:
+                    self.blacklist.append(ban_id)
+                    self.sendMessageThreaded(chat_id,"User %s blacklisted" % ban_id)
+                    with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'w') as fp:
+                        fp.writelines([ "%s\r\n" % x for x in self.blacklist ])
+            return
+
+        if message['text'].startswith("/unban") and message['from']['id'] in self.admins:
+            # blacklist user
+            if len(message['text'].split())==2:
+                ban_id = message['text'].split()[1]
+                if ban_id in self.blacklist:
+                    self.blacklist.remove(ban_id)
+                    self.sendMessageThreaded(chat_id,"User %s un-blacklisted" % ban_id)
+                    with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'w') as fp:
+                        fp.writelines([ "%s\r\n" % x for x in self.blacklist ])
+            return        
+            
         if not message['text'].startswith('/'):
             for ll in self.listening:
-                self.sendMessageThreaded(ll,"<-- %s" % message['text'])
+                # self.forwardMessageThreaded(ll, message['from']['id'], message['message_id']) # too
+                self.sendMessageThreaded(ll,"<-- [%s] %s" % (message['from']['id'], message['text']))
 
             delta = delta = datetime.now() - datetime.fromtimestamp(message['date'])
             learn = True
@@ -373,7 +416,7 @@ class Lampone(Bot):
                         
 
                     for ll in self.listening:
-                        self.sendMessageThreaded(ll,"--> %s" % reply)
+                        self.sendMessageThreaded(ll,"--> [%s] %s" % (message['from']['id'],reply))
 
             except Exception as e:
                 logging.error("ERR - try learn/rispondi - %s" % e )
@@ -411,6 +454,7 @@ if __name__ == '__main__':
     if cf['telegram']['token'] == "YOUR TOKEN HERE":
         logging.info("Token not defined, check config!")    
     else:
+        #webhooks not supported for now
         #cherrypy.config.update({'server.socket_host': cf['cherry']['listen_ip'],'server.socket_port': int(cf['cherry']['listen_port'])})
         #cherrypy.quickstart(Lampone(cf['telegram']['token'],admins=cf['telegram']['admins'],webhook_url=cf['telegram']['webhook_url']),cf['cherry']['script_name'])
 
