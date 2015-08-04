@@ -103,7 +103,7 @@ class Lampone(Bot):
         if self.multibrain:
             lang = guess_language_name(msg).lower()
         else:
-            lang = 'multi'
+            lang = 'italian'
 
         try:
             if not lang in self.brains:
@@ -123,14 +123,14 @@ class Lampone(Bot):
         if self.multibrain:
             lang = guess_language_name(msg).lower()
         else:
-            lang = 'multi'
+            lang = 'italian'
 
         if not lang in self.brains:
             self.brains[lang] =  Brain(os.path.join(os.path.split(__file__)[0],"brains","lampone_%s.brain" % lang))
             if lang in self.languages:
-                self.brains[lang] .set_stemmer(lang)
+                self.brains[lang].set_stemmer(lang)
             
-        return self.brains[lang] .reply(msg,loop_ms=self.reply_time)
+        return self.brains[lang].reply(msg,loop_ms=self.reply_time)
     
     def sendMessageThreaded(self,chat_id,text,disable_web_page_preview=True,reply_to_message_id=None,reply_markup=None):
         Thread(target=self.sendMessage,kwargs={
@@ -147,7 +147,7 @@ class Lampone(Bot):
             'from_chat_id':from_chat_id,
             'message_id':message_id
         }).start()
-        
+    
     def autolearn(self):
         # learns from previous chats
         
@@ -158,12 +158,13 @@ class Lampone(Bot):
                 try:
                     l = l.decode('utf8').strip()
                     ok = True
-                    if 'lampone' in l.lower(): ok = False
+                    #if 'lampone' in l.lower(): ok = False
                     if 'http' in l.lower(): ok = False
                     if len(l) < 3: ok = False
                     if l.lower() in lines: ok = False
                     if len(l.split()) < 3: ok = False
                     if '@' in l: ok = False
+                    if l.isdigit(): ok = False
                         
                     if ok:
                         lang = self.learn(l)
@@ -392,7 +393,7 @@ class Lampone(Bot):
                     if self.multibrain:
                         lang = guess_language_name(text).lower()
                     else:
-                        lang = 'multi'
+                        lang = 'italian'
              
                 if rispondi:
                     # se proprio devo rispondere
