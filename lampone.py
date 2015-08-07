@@ -32,7 +32,7 @@ from guess_language import guess_language_name
 from Stemmer import algorithms as stemmer_languages
 import logging
 import re
-import cherrypy
+#import cherrypy
 
 logger = logging.getLogger('lamponebot')
 logger.setLevel(logging.INFO)
@@ -49,6 +49,8 @@ class Lampone(Bot):
     brains = {}
     multibrain = False # works better with a single one
     blacklist = []
+    ignorelangs=[]
+    defaultlang="italian"
 
     
     def __init__(self, token,admins="",webhook_url=""):
@@ -68,17 +70,17 @@ class Lampone(Bot):
                 self.blacklist = [ x.strip() for x in fp.readlines() ]
            
 
-    @cherrypy.expose
-    @cherrypy.tools.json_in()
-    def webhook(self):
-        r = cherrypy.request.json
-        m = r['message']
-        cid = m['chat']['id']
-        if 'text' in m:
-            self.parsemessage(cid,m)
-        if 'document' in m:
-            self.parsedocument(cid,m)                    
-    webhook.exposed = True
+    #@cherrypy.expose
+    #@cherrypy.tools.json_in()
+    #def webhook(self):
+        #r = cherrypy.request.json
+        #m = r['message']
+        #cid = m['chat']['id']
+        #if 'text' in m:
+            #self.parsemessage(cid,m)
+        #if 'document' in m:
+            #self.parsedocument(cid,m)                    
+    #webhook.exposed = True
     
 
     def log_learn(self,msg):
@@ -196,6 +198,17 @@ class Lampone(Bot):
             return         
         self.forwardMessageThreaded(self.admins[0], message['from']['id'], message['message_id']) # too
 
+        
+    def blacklistuser(self,ban_id,chat_id=None):
+        if not ban_id in self.blacklist and not int(ban_id) in self.admins:
+            self.blacklist.append(ban_id)
+            if chat_id:
+                self.sendMessageThreaded(chat_id,"User %s blacklisted" % ban_id)
+            else:
+                self.sendMessageThreaded(self.admins[0],"User %s blacklisted" % ban_id)
+            with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'w') as fp:
+                fp.writelines([ "%s\r\n" % x for x in self.blacklist ])        
+
     def parsemessage(self,chat_id,message):
         logger.info("Messaggio ricevuto da %s" % message['from'] )
         logger.info(message['text'])
@@ -204,9 +217,9 @@ class Lampone(Bot):
             return
         
         if str(message['from']['id']) in self.blacklist:
+            logger.info("%s blacklisted" % message['from']['id'])
             return 
         
-        logger.info(guess_language_name(message['text']))
         #if self.lastbackup != datetime.now().hour:
         #    self.lastbackup = datetime.now().hour
         #    self.backupBrain()
@@ -326,25 +339,13 @@ class Lampone(Bot):
             # blacklist user
             if len(message['text'].split())==2:
                 ban_id = message['text'].split()[1]
-                if not ban_id in self.blacklist and not int(ban_id) in self.admins:
-                    self.blacklist.append(ban_id)
-                    self.sendMessageThreaded(chat_id,"User %s blacklisted" % ban_id)
-                    with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'w') as fp:
-                        fp.writelines([ "%s\r\n" % x for x in self.blacklist ])
+                self.blacklistuser(ban_id,chat_id)
             else:
                 if 'reply_to_message' in message:
                     match = re.match('.*\[(\d+)\].*',message['reply_to_message']['text'])
                     if match:
                         ban_id = match.groups(0)[0]
-                        if not ban_id in self.blacklist and not int(ban_id) in self.admins:
-                            self.blacklist.append(ban_id)
-                            self.sendMessageThreaded(chat_id,"User %s blacklisted" % ban_id)
-                            with open(os.path.join(os.path.split(__file__)[0],'blacklist.txt'),'w') as fp:
-                                fp.writelines([ "%s\r\n" % x for x in self.blacklist ])                        
-                        
-                    
-                # check for number in forwarded message
-                
+                        self.blacklistuser(ban_id,chat_id)
             return
 
         if message['text'].startswith("/unban") and message['from']['id'] in self.admins:
@@ -400,14 +401,21 @@ class Lampone(Bot):
                     self.groupmode[chat_id] = 2
                     rispondi = False
 
+            guesslang =  guess_language_name(text).lower()
+            if guesslang in self.ignorelangs:
+                # automatic ban 
+                self.blacklistuser(message['from']['id'])
+                learn = False
+                rispondi = False
+
             try: 
-                logger.info("Learn: %s, Rispondi: %s" % (learn,rispondi) )
+                logger.info("Lang: %s, Learn: %s, Rispondi: %s" % (guesslang,learn,rispondi) )
                 if learn:
                     self.log_learn(text) # log messages for retrain
                     lang = self.learn(text)
                 else:
                     if self.multibrain:
-                        lang = guess_language_name(text).lower()
+                        lang = guesslang
                     else:
                         lang = 'italian'
              
@@ -477,8 +485,12 @@ if __name__ == '__main__':
 
         l = Lampone(
             cf['telegram']['token'],
-            admins=cf['telegram']['admins']
-        )
+            admins=cf['telegram']['admins'])
+
+        l.ignorelangs=cf['global']['ignorelangs'].split(',')
+        l.multibrain = True if cf['global']['multibrain'].lower() == 'true' else False
+        l.defaultlang = cf['global']['defaultlang']
+
         logger.info(l.get('getMe'))
             
         for admin in l.admins:
